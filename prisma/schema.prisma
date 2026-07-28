@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Auth & Team ───
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(MEMBER)
+  type         MemberType @default(DEV)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  dealAssignments DealAssignment[]
+  dealsCreated    Deal[]     @relation("CreatedBy")
+  closedDeals     Deal[]     @relation("ClosedBy")
+  payouts         Payout[]
+  auditLogs       AuditLog[]
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum MemberType {
+  DEV
+  MARKETING
+}
+
+// ─── Business Categories ───
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String?
+  createdAt DateTime @default(now())
+
+  deals Deal[]
+}
+
+// ─── Clients ───
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  company   String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deals Deal[]
+}
+
+// ─── Deals ───
+
+model Deal {
+  id               String   @id @default(cuid())
+  clientId         String
+  client           Client   @relation(fields: [clientId], references: [id])
+  projectName      String
+  link             String?
+  categoryId       String?
+  category         Category? @relation(fields: [categoryId], references: [id])
+
+  totalPrice       Int
+  fixedCosts       Int      @default(0)
+  marketingPercent Float    @default(15)
+  devPoolPercent   Float    @default(50)
+
+  advanceReceived  Int      @default(0)
+  dueMoney         Int      @default(0)
+
+  status           DealStatus @default(CLOSED)
+  version          Int      @default(1)
+
+  closedById  String?
+  closedBy    User?   @relation("ClosedBy", fields: [closedById], references: [id])
+
+  createdById String
+  createdBy   User    @relation("CreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignments DealAssignment[]
+  payments    Payment[]
+  costItems   CostItem[]
+}
+
+enum DealStatus {
+  LEAD
+  CLOSED
+  IN_PROGRESS
+  DELIVERED
+  PAID
+}
+
+// ─── Who works on what ───
+
+model DealAssignment {
+  id                String @id @default(cuid())
+  dealId            String
+  deal              Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User   @relation(fields: [userId], references: [id])
+  role              String?
+  allocationPercent Float
+
+  @@unique([dealId, userId])
+}
+
+// ─── Money In (from client) ───
+
+model Payment {
+  id        String   @id @default(cuid())
+  dealId    String
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  amount    Int
+  method    String?
+  note      String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+}
+
+// ─── Money Out (to team members) ───
+
+model Payout {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Int
+  note      String?
+  method    String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+}
+
+// ─── Itemized Costs (per deal, or general company overhead when dealId is null) ───
+
+model CostItem {
+  id          String   @id @default(cuid())
+  dealId      String?
+  deal        Deal?    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  label       String
+  amount      Int
+  isRecurring Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+// ─── Audit Trail ───
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  diff       Json?
+  createdAt  DateTime @default(now())
+}

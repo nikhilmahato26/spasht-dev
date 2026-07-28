@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fonts */
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-display), sans-serif;
+  --font-mono: var(--font-mono), monospace;
+
+  /* Background & surface */
+  --color-bg: #f5f5f2;
+  --color-surface: #ffffff;
+  --color-surface-2: #edece7;
+  --color-border: #dedad6;
+
+  /* Text */
+  --color-text: #1b1d1e;
+  --color-text-muted: #71716b;
+  --color-text-faint: #a5a49c;
+
+  /* Semantic */
+  --color-accent: #0f6e5f;
+  --color-accent-soft: #e1efea;
+  --color-cost: #ad4a3b;
+  --color-cost-soft: #f5e7e3;
+  --color-marketing: #b9832a;
+  --color-marketing-soft: #f6eedc;
+  --color-dev: #39568f;
+  --color-dev-soft: #e6eaf3;
+  --color-dev-2: #5c7ab8;
+  --color-dev-3: #8098cc;
+  --color-dev-4: #a6bae0;
+  --color-company: #6b5490;
+  --color-company-soft: #eeeaf3;
+  --color-danger: #c0392b;
+  --color-pending: #9a5b13;
+  --color-pending-soft: #f6ece0;
+
+  /* Radius */
+  --radius-card: 12px;
+  --radius-badge: 20px;
+  --radius-btn: 8px;
+  --radius-input: 7px;
+
+  /* Font sizes */
+  --text-2xs: 10.5px;
+  --text-xs: 11.5px;
+  --text-sm: 12.5px;
+  --text-base: 13.5px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 17px;
+  --text-2xl: 19px;
+  --text-3xl: 26px;
+
+  /* Letter spacing */
+  --tracking-label: 0.05em;
+  --tracking-tight: -0.01em;
+  --tracking-tighter: -0.02em;
+
+  /* Layout */
+  --container-app: 1080px;
+}
+
+body {
+  @apply bg-bg text-text font-sans antialiased;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  @apply outline-2 outline-dev outline-offset-1;
+}
