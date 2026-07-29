@@ -8,7 +8,7 @@ export async function getUserPayoutSummary(userId: string) {
       include: { deal: { include: { client: true } }, user: true },
       orderBy: { deal: { createdAt: "desc" } },
     }),
-    db.payout.findMany({ where: { userId }, orderBy: { date: "desc" } }),
+    db.payout.findMany({ where: { userId }, orderBy: { date: "desc" }, include: { deal: true } }),
   ]);
 
   let entitled = 0;
@@ -16,7 +16,12 @@ export async function getUserPayoutSummary(userId: string) {
     const split = computeDealSplit(a.deal);
     const amount = computeAssignmentAmount(split.netEarning, a.allocationPercent);
     entitled += amount;
-    return { assignment: a, amount };
+    
+    const dealPayouts = payouts.filter(p => p.dealId === a.dealId);
+    const paidForDeal = dealPayouts.reduce((sum, p) => sum + p.amount, 0);
+    const left = Math.max(0, amount - paidForDeal);
+    
+    return { assignment: a, amount, paid: paidForDeal, left };
   });
 
   const paid = payouts.reduce((sum, p) => sum + p.amount, 0);

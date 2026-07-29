@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { computeDueMoney } from "@/lib/deal-calc";
+import { computeDueMoney, computeDealSplit, computeAssignmentAmount } from "@/lib/deal-calc";
 
 export type ScopeUser = { id: string; role: "ADMIN" | "MEMBER" };
 
@@ -37,7 +37,7 @@ export function getDealForUser(id: string, user: ScopeUser) {
   });
 }
 
-export async function recalcDue(dealId: string) {
+export async function recalcDue(dealId: string, actorId?: string) {
   const deal = await db.deal.findUniqueOrThrow({
     where: { id: dealId },
     include: { payments: true },
@@ -56,6 +56,52 @@ export async function recalcDue(dealId: string) {
       ...(shouldAutoMarkPaid ? { status: "PAID" } : {}),
     },
   });
+
+  if (shouldAutoMarkPaid && actorId) {
+    const dealWithAssignments = await db.deal.findUnique({
+      where: { id: dealId },
+      include: { assignments: true },
+    });
+    
+    if (dealWithAssignments) {
+      const split = computeDealSplit({
+        totalPrice: dealWithAssignments.totalPrice,
+        fixedCosts: dealWithAssignments.fixedCosts,
+        marketingPercent: dealWithAssignments.marketingPercent,
+        devPoolPercent: dealWithAssignments.devPoolPercent,
+      });
+
+      for (const a of dealWithAssignments.assignments) {
+        const entitled = computeAssignmentAmount(split.netEarning, a.allocationPercent);
+        const existingPayouts = await db.payout.aggregate({
+          where: { userId: a.userId, dealId: a.dealId },
+          _sum: { amount: true },
+        });
+        const paid = existingPayouts._sum.amount || 0;
+        const left = entitled - paid;
+
+        if (left > 0) {
+          await db.payout.create({
+            data: {
+              userId: a.userId,
+              dealId: a.dealId,
+              amount: left,
+              note: "Auto payout on full payment",
+              method: "System Auto",
+            },
+          });
+          await db.auditLog.create({
+            data: {
+              userId: actorId,
+              action: "payout.create",
+              entityType: "User",
+              entityId: a.userId,
+            }
+          });
+        }
+      }
+    }
+  }
 
   return dueMoney;
 }

@@ -198,7 +198,7 @@ export async function updateDeal(dealId: string, formData: FormData) {
     }
   }, { maxWait: 10_000, timeout: 20_000 });
 
-  await recalcDue(dealId);
+  await recalcDue(dealId, user.id);
 
   await logAudit({
     userId: user.id,
@@ -236,7 +236,7 @@ export async function addPayment(dealId: string, formData: FormData) {
     },
   });
 
-  await recalcDue(dealId);
+  await recalcDue(dealId, user.id);
 
   await logAudit({
     userId: user.id,

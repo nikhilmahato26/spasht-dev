@@ -150,6 +150,20 @@ export default async function TeamMemberPage({
         <div className="bg-surface border border-border rounded-card p-5">
           <p className="text-lg font-semibold mb-4">Record payout</p>
           <form action={recordPayoutForUser} className="flex flex-col gap-3">
+            <select
+              name="dealId"
+              className="border border-border rounded-input px-3 py-2 text-base bg-surface"
+            >
+              <option value="">General Payout</option>
+              {summary.dealEarnings.map(({ assignment, left }) => {
+                if (left === 0) return null;
+                return (
+                  <option key={assignment.dealId} value={assignment.dealId}>
+                    {assignment.deal.client.name} - {assignment.deal.projectName} (Left: {formatPaisa(left)})
+                  </option>
+                );
+              })}
+            </select>
             <div className="grid grid-cols-2 gap-3">
               <input
                 type="number"
@@ -186,7 +200,8 @@ export default async function TeamMemberPage({
           <div key={payout.id} className="flex items-center justify-between px-4 py-3">
             <div>
               <span className="text-base">{payout.method || "Payout"}</span>
-              {payout.note && <span className="text-sm text-text-faint"> · {payout.note}</span>}
+              {payout.deal && <span className="text-sm font-medium ml-2 bg-cost-soft px-2 py-0.5 rounded text-xs">{payout.deal.projectName}</span>}
+              {payout.note && <span className="text-sm text-text-faint ml-2">· {payout.note}</span>}
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm text-text-faint">
@@ -207,7 +222,7 @@ export default async function TeamMemberPage({
 
       <h2 className="text-lg font-semibold mb-3">Deal history</h2>
       <div className="flex flex-col gap-2">
-        {summary.dealEarnings.map(({ assignment, amount }) => (
+        {summary.dealEarnings.map(({ assignment, amount, left }) => (
           <Link
             key={assignment.id}
             href={`/deals/${assignment.dealId}`}
@@ -220,7 +235,14 @@ export default async function TeamMemberPage({
                 {assignment.allocationPercent}% of net earning
               </p>
             </div>
-            <span className="font-mono text-base font-semibold">{formatPaisa(amount)}</span>
+            <div className="text-right">
+              <span className="font-mono text-base font-semibold block">{formatPaisa(amount)}</span>
+              {left === 0 ? (
+                <span className="text-xs text-accent font-medium">Paid in full</span>
+              ) : (
+                <span className="text-xs text-text-faint font-medium">Left: {formatPaisa(left)}</span>
+              )}
+            </div>
           </Link>
         ))}
         {summary.dealEarnings.length === 0 && (

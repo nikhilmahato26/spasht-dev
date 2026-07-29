@@ -98,6 +98,7 @@ model Deal {
   assignments DealAssignment[]
   payments    Payment[]
   costItems   CostItem[]
+  payouts     Payout[]
 }
 
 enum DealStatus {
@@ -141,6 +142,8 @@ model Payout {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+  dealId    String?
+  deal      Deal?    @relation(fields: [dealId], references: [id])
   amount    Int
   note      String?
   method    String?

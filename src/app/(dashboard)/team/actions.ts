@@ -104,9 +104,12 @@ export async function recordPayout(userId: string, formData: FormData) {
   const amount = rupeesToPaisa(Number(formData.get("amount") ?? 0));
   if (!amount) return;
 
+  const dealId = str(formData, "dealId") || null;
+
   await db.payout.create({
     data: {
       userId,
+      dealId,
       amount,
       method: str(formData, "method") || null,
       note: str(formData, "note") || null,
