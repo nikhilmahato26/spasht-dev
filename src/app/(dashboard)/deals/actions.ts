@@ -130,6 +130,8 @@ export async function createDeal(formData: FormData) {
     return created;
   }, { maxWait: 10_000, timeout: 20_000 });
 
+  await recalcDue(deal.id, user.id);
+
   await logAudit({
     userId: user.id,
     action: "deal.create",

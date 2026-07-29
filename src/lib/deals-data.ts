@@ -57,7 +57,9 @@ export async function recalcDue(dealId: string, actorId?: string) {
     },
   });
 
-  if (shouldAutoMarkPaid && actorId) {
+  const isFullyPaid = dueMoney === 0 && deal.totalPrice > 0;
+
+  if (isFullyPaid && actorId) {
     const dealWithAssignments = await db.deal.findUnique({
       where: { id: dealId },
       include: { assignments: true },
