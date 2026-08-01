@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 type MemberType = "DEV" | "MARKETING";
 type UserOption = { id: string; name: string; type: MemberType };
@@ -117,6 +117,24 @@ export function DealMoneyForm({
     return Math.round(raw * 10) / 10;
   }
 
+  const totalAssignedMoney = users.reduce(
+    (sum, u) => sum + (rows[u.id]?.checked ? rows[u.id].money || 0 : 0),
+    0
+  );
+  // Allow exact 0 net earning to be valid, otherwise require assigned money to exactly match
+  const isFullyAssigned = netEarning === 0 || totalAssignedMoney === netEarning;
+
+  const validationRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (validationRef.current) {
+      validationRef.current.setCustomValidity(
+        isFullyAssigned
+          ? ""
+          : `Please assign exactly all of the net earning (₹${netEarning}). Currently assigned: ₹${totalAssignedMoney}`
+      );
+    }
+  }, [isFullyAssigned, netEarning, totalAssignedMoney]);
+
   return (
     <>
       <div className="grid grid-cols-2 gap-4">
@@ -202,9 +220,27 @@ export function DealMoneyForm({
       </p>
 
       <div>
-        <p className="text-xs uppercase tracking-label text-text-muted font-semibold mb-2">
-          Team assignments
-        </p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs uppercase tracking-label text-text-muted font-semibold">
+            Team assignments
+          </p>
+          <div
+            className={`text-sm font-medium ${
+              isFullyAssigned ? "text-green-600" : "text-red-500"
+            }`}
+          >
+            Assigned: ₹{totalAssignedMoney} / ₹{netEarning}
+          </div>
+        </div>
+        <input
+          type="checkbox"
+          required
+          checked={isFullyAssigned}
+          className="opacity-0 absolute -z-10 w-0 h-0"
+          onChange={() => {}}
+          ref={validationRef}
+          tabIndex={-1}
+        />
         <div className="border border-border rounded-card divide-y divide-border">
           {users.map((u) => {
             const row = rows[u.id];
@@ -214,6 +250,8 @@ export function DealMoneyForm({
               0,
               typeBudgetPercent
             );
+            const maxMoney = Math.round((netEarning * maxPercent) / 100);
+
             return (
               <div
                 key={u.id}
@@ -238,20 +276,18 @@ export function DealMoneyForm({
                   className="border border-border rounded-input px-2 py-1.5 text-sm bg-surface"
                 />
                 <input
-                  type="number"
-                  name={`pct_${u.id}`}
-                  value={row.percent || ""}
-                  min="0"
-                  max={maxPercent}
-                  step="0.1"
+                  type="text"
+                  value={row.percent ? `${row.percent}%` : ""}
+                  readOnly
                   placeholder="%"
-                  onChange={(e) => handlePercentChange(u.id, Number(e.target.value))}
-                  className="border border-border rounded-input px-2 py-1.5 text-sm bg-surface font-mono"
+                  className="border border-border rounded-input px-2 py-1.5 text-sm bg-surface font-mono text-text-muted cursor-not-allowed opacity-70"
                 />
+                <input type="hidden" name={`pct_${u.id}`} value={row.percent || ""} />
                 <input
                   type="number"
                   value={row.money || ""}
                   min="0"
+                  max={maxMoney}
                   placeholder="₹"
                   onChange={(e) => handleMoneyChange(u.id, Number(e.target.value))}
                   className="border border-border rounded-input px-2 py-1.5 text-sm bg-surface font-mono"
@@ -264,9 +300,8 @@ export function DealMoneyForm({
           <p className="text-text-muted text-sm mt-2">No team members yet — add them under Team.</p>
         )}
         <p className="text-2xs text-text-faint mt-1">
-          % is this person&apos;s direct share of net earning — marketing members&apos; %s should
-          add up to at most Marketing % above, and devs&apos; %s to at most Dev pool %. Type either
-          the % or the ₹ amount — the other fills in.
+          Type the ₹ amount for each member. The percentage is calculated automatically.
+          All of the net earning must be assigned before you can save.
         </p>
       </div>
     </>
