@@ -103,18 +103,17 @@ export function DealMoneyForm({
   function handleMoneyChange(userId: string, money: number) {
     const clampedMoney = clamp(money, 0, Infinity);
     const rawPercent = netEarning > 0 ? (clampedMoney / netEarning) * 100 : 0;
-    const percent = clamp(Math.round(rawPercent * 10) / 10, 0, 100);
+    const percent = clamp(rawPercent, 0, 100);
     updateRow(userId, { money: clampedMoney, percent });
   }
 
   // A DEV assignee's % (with their dev teammates) should total at most
   // devPoolPercent; a MARKETING assignee's % should total at most
   // marketingPercent — each is a slice of that same shared budget.
-  function otherRowsPercentSum(userId: string, memberType: MemberType) {
-    const raw = users
+  function otherRowsMoneySum(userId: string, memberType: MemberType) {
+    return users
       .filter((u) => u.type === memberType && u.id !== userId)
-      .reduce((sum, u) => sum + (rows[u.id]?.checked ? rows[u.id].percent : 0), 0);
-    return Math.round(raw * 10) / 10;
+      .reduce((sum, u) => sum + (rows[u.id]?.checked ? rows[u.id].money || 0 : 0), 0);
   }
 
   const totalAssignedMoney = users.reduce(
@@ -149,6 +148,7 @@ export function DealMoneyForm({
             step="1"
             required
             value={totalPrice || ""}
+            onWheel={(e) => e.currentTarget.blur()}
             onChange={(e) => setTotalPrice(clamp(Number(e.target.value), 0, Infinity))}
             className="border border-border rounded-input px-3 py-2 text-base bg-surface font-mono"
           />
@@ -163,6 +163,7 @@ export function DealMoneyForm({
             min="0"
             step="1"
             value={fixedCosts || ""}
+            onWheel={(e) => e.currentTarget.blur()}
             onChange={(e) => setFixedCosts(clamp(Number(e.target.value), 0, Infinity))}
             className="border border-border rounded-input px-3 py-2 text-base bg-surface font-mono"
           />
@@ -181,6 +182,7 @@ export function DealMoneyForm({
             max="100"
             step="0.1"
             value={marketingPercent}
+            onWheel={(e) => e.currentTarget.blur()}
             onChange={(e) => handleMarketingChange(Number(e.target.value))}
             className="border border-border rounded-input px-3 py-2 text-base bg-surface font-mono"
           />
@@ -196,6 +198,7 @@ export function DealMoneyForm({
             max="100"
             step="0.1"
             value={devPoolPercent}
+            onWheel={(e) => e.currentTarget.blur()}
             onChange={(e) => handleDevPoolChange(Number(e.target.value))}
             className="border border-border rounded-input px-3 py-2 text-base bg-surface font-mono"
           />
@@ -210,6 +213,7 @@ export function DealMoneyForm({
             min="0"
             step="1"
             defaultValue={defaultAdvanceReceived}
+            onWheel={(e) => e.currentTarget.blur()}
             className="border border-border rounded-input px-3 py-2 text-base bg-surface font-mono"
           />
         </div>
@@ -244,13 +248,12 @@ export function DealMoneyForm({
         <div className="border border-border rounded-card divide-y divide-border">
           {users.map((u) => {
             const row = rows[u.id];
-            const typeBudgetPercent = u.type === "MARKETING" ? marketingPercent : devPoolPercent;
-            const maxPercent = clamp(
-              typeBudgetPercent - otherRowsPercentSum(u.id, u.type),
+            const typeBudgetMoney = u.type === "MARKETING" ? marketingPool : devPool;
+            const maxMoney = clamp(
+              typeBudgetMoney - otherRowsMoneySum(u.id, u.type),
               0,
-              typeBudgetPercent
+              typeBudgetMoney
             );
-            const maxMoney = Math.round((netEarning * maxPercent) / 100);
 
             return (
               <div
@@ -277,7 +280,7 @@ export function DealMoneyForm({
                 />
                 <input
                   type="text"
-                  value={row.percent ? `${row.percent}%` : ""}
+                  value={row.percent ? `${(Math.round(row.percent * 10) / 10).toFixed(1)}%` : ""}
                   readOnly
                   placeholder="%"
                   className="border border-border rounded-input px-2 py-1.5 text-sm bg-surface font-mono text-text-muted cursor-not-allowed opacity-70"
@@ -289,6 +292,7 @@ export function DealMoneyForm({
                   min="0"
                   max={maxMoney}
                   placeholder="₹"
+                  onWheel={(e) => e.currentTarget.blur()}
                   onChange={(e) => handleMoneyChange(u.id, Number(e.target.value))}
                   className="border border-border rounded-input px-2 py-1.5 text-sm bg-surface font-mono"
                 />
