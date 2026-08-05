@@ -2,6 +2,7 @@ import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import { signIn } from "@/auth";
 import { SubmitButton } from "@/components/submit-button";
+import Image from "next/image";
 
 export default async function LoginPage({
   searchParams,
@@ -12,7 +13,14 @@ export default async function LoginPage({
 
   return (
     <>
-      <h1 className="font-display text-xl font-semibold mb-1">Spasht Finance</h1>
+      <Image 
+        src="/logo.png" 
+        alt="Spasht" 
+        width={160} 
+        height={40} 
+        className="w-auto h-10 mb-4"
+        priority 
+      />
       <p className="text-sm text-text-muted mb-5">Sign in to your account</p>
 
       {error && (
@@ -29,7 +37,7 @@ export default async function LoginPage({
             await signIn("credentials", {
               email: formData.get("email"),
               password: formData.get("password"),
-              redirectTo: "/",
+              redirectTo: "/admin",
             });
           } catch (err) {
             if (err instanceof AuthError) {

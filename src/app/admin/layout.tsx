@@ -14,6 +14,7 @@ import { requireUser } from "@/lib/dal";
 import { signOut } from "@/auth";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { MobileSidebar } from "@/components/mobile-sidebar";
+import Image from "next/image";
 
 function initials(name: string) {
   return name
@@ -33,16 +34,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
     {
       label: "Operations",
       items: [
-        { href: "/", label: "Home", icon: <Home {...iconProps} /> },
-        { href: "/deals", label: "Deals", icon: <Handshake {...iconProps} /> },
-        { href: "/clients", label: "Clients", icon: <Users {...iconProps} /> },
-        { href: "/expenses", label: "Expenses", icon: <Receipt {...iconProps} /> },
-        { href: "/categories", label: "Categories", icon: <Tag {...iconProps} /> },
+        { href: "/admin", label: "Home", icon: <Home {...iconProps} /> },
+        { href: "/admin/deals", label: "Deals", icon: <Handshake {...iconProps} /> },
+        { href: "/admin/clients", label: "Clients", icon: <Users {...iconProps} /> },
+        { href: "/admin/expenses", label: "Expenses", icon: <Receipt {...iconProps} /> },
+        { href: "/admin/categories", label: "Categories", icon: <Tag {...iconProps} /> },
         ...(user.role === "ADMIN"
-          ? [{ href: "/team", label: "Team", icon: <UsersRound {...iconProps} /> }]
+          ? [{ href: "/admin/team", label: "Team", icon: <UsersRound {...iconProps} /> }]
           : []),
         ...(user.role === "MEMBER"
-          ? [{ href: "/my-payouts", label: "My Payouts", icon: <Wallet {...iconProps} /> }]
+          ? [{ href: "/admin/my-payouts", label: "My Payouts", icon: <Wallet {...iconProps} /> }]
           : []),
       ],
     },
@@ -50,7 +51,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       ? [
           {
             label: "System",
-            items: [{ href: "/audit", label: "Audit Log", icon: <ScrollText {...iconProps} /> }],
+            items: [{ href: "/admin/audit", label: "Audit Log", icon: <ScrollText {...iconProps} /> }],
           },
         ]
       : []),
@@ -59,14 +60,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen flex">
       <MobileSidebar>
-        <div className="flex items-center gap-2.5 px-3 mb-7">
-          <div className="w-8 h-8 rounded-btn bg-linear-to-br from-dev to-company flex items-center justify-center shrink-0">
-            <span className="font-display text-surface text-sm font-bold">S</span>
-          </div>
-          <div className="leading-tight">
-            <p className="font-display text-lg font-semibold">Spasht</p>
-            <p className="text-2xs text-text-muted -mt-0.5">Finance Tracker</p>
-          </div>
+        <div className="px-3 mb-7">
+          <Image 
+            src="/logo.png" 
+            alt="Spasht" 
+            width={140} 
+            height={40} 
+            className="w-auto h-8"
+            priority 
+          />
         </div>
 
         <SidebarNav groups={groups} />

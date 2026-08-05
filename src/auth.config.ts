@@ -11,15 +11,20 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnLogin = nextUrl.pathname.startsWith("/login");
+      const isOnAdmin = nextUrl.pathname.startsWith("/admin");
 
       if (isOnLogin) {
         if (isLoggedIn) {
-          return Response.redirect(new URL("/", nextUrl));
+          return Response.redirect(new URL("/admin", nextUrl));
         }
         return true;
       }
 
-      return isLoggedIn;
+      if (isOnAdmin) {
+        return isLoggedIn;
+      }
+
+      return true;
     },
   },
   providers: [],

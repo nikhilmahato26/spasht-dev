@@ -26,6 +26,6 @@ export const requireUser = cache(async () => {
 
 export async function requireAdmin() {
   const user = await requireUser();
-  if (user.role !== "ADMIN") redirect("/");
+  if (user.role !== "ADMIN") redirect("/admin");
   return user;
 }
