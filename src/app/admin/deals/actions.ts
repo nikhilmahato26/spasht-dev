@@ -56,7 +56,8 @@ async function assignmentsWithinPoolLimits(
     sums[type] += a.allocationPercent;
   }
 
-  const EPSILON = 1e-6;
+  // Allow a 2.0% tolerance to account for rounding errors when converting integer rupee amounts back to percentages
+  const EPSILON = 2.0;
   return sums.DEV <= devPoolPercent + EPSILON && sums.MARKETING <= marketingPercent + EPSILON;
 }
 
@@ -82,7 +83,9 @@ export async function createDeal(formData: FormData) {
   const resolvedStatus = initialDueMoney === 0 ? "PAID" : status;
 
   const assignments = await readAssignments(formData);
-  if (!(await assignmentsWithinPoolLimits(assignments, marketingPercent, devPoolPercent))) return;
+  if (!(await assignmentsWithinPoolLimits(assignments, marketingPercent, devPoolPercent))) {
+    throw new Error("Assignments exceed pool limits");
+  }
 
   const deal = await db.$transaction(async (tx) => {
     let resolvedClientId = clientId;
@@ -166,7 +169,9 @@ export async function updateDeal(dealId: string, formData: FormData) {
   const status = str(formData, "status") as DealStatus;
   const closedById = str(formData, "closedById") || null;
   const assignments = await readAssignments(formData);
-  if (!(await assignmentsWithinPoolLimits(assignments, marketingPercent, devPoolPercent))) return;
+  if (!(await assignmentsWithinPoolLimits(assignments, marketingPercent, devPoolPercent))) {
+    throw new Error("Assignments exceed pool limits");
+  }
 
   // Optimistic locking: only applies if no one else updated the deal since this form loaded.
   await db.$transaction(async (tx) => {

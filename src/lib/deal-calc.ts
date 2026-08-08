@@ -3,6 +3,9 @@ export type DealSplitInput = {
   fixedCosts: number;
   marketingPercent: number;
   devPoolPercent: number;
+  status?: string;
+  advanceReceived?: number;
+  payments?: { amount: number }[];
 };
 
 export type DealSplit = {
@@ -20,7 +23,17 @@ export type DealSplit = {
 // Fixed costs come off the top first; marketing/dev pool percentages apply
 // to what's left (netEarning). Everything is in paisa.
 export function computeDealSplit(deal: DealSplitInput): DealSplit {
-  const netEarning = deal.totalPrice - deal.fixedCosts;
+  let effectiveTotalPrice = deal.totalPrice;
+  let netEarning = deal.totalPrice - deal.fixedCosts;
+
+  if (deal.status === "CANCELLED") {
+    if (deal.advanceReceived !== undefined && deal.payments !== undefined) {
+      effectiveTotalPrice = deal.advanceReceived + deal.payments.reduce((sum, p) => sum + p.amount, 0);
+    }
+    // Cancelled deals do NOT subtract fixed costs from the effective total price for payout purposes
+    netEarning = effectiveTotalPrice;
+  }
+
   const marketing = Math.round(netEarning * (deal.marketingPercent / 100));
   const devPool = Math.round(netEarning * (deal.devPoolPercent / 100));
   const unallocated = netEarning - marketing - devPool;
@@ -31,8 +44,10 @@ export function computeDealSplit(deal: DealSplitInput): DealSplit {
 export function computeDueMoney(
   totalPrice: number,
   advanceReceived: number,
-  payments: { amount: number }[]
+  payments: { amount: number }[],
+  status?: string
 ): number {
+  if (status === "CANCELLED") return 0;
   const paid = advanceReceived + payments.reduce((sum, p) => sum + p.amount, 0);
   return Math.max(0, totalPrice - paid);
 }

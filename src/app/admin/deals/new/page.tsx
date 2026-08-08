@@ -71,6 +71,7 @@ export default async function NewDealPage() {
               <option value="IN_PROGRESS">In progress</option>
               <option value="DELIVERED">Delivered</option>
               <option value="PAID">Paid</option>
+              <option value="CANCELLED">Cancelled</option>
             </select>
           </div>
         </div>

@@ -33,6 +33,7 @@ const STATUS_LABELS: Record<DealStatus, string> = {
   IN_PROGRESS: "In progress",
   DELIVERED: "Delivered",
   PAID: "Paid",
+  CANCELLED: "Cancelled",
 };
 
 const STATUS_HEX: Record<DealStatus, string> = {
@@ -41,9 +42,10 @@ const STATUS_HEX: Record<DealStatus, string> = {
   IN_PROGRESS: "#B9832A",
   DELIVERED: "#6B5490",
   PAID: "#0F6E5F",
+  CANCELLED: "#9A3C3C",
 };
 
-const STATUS_ORDER: DealStatus[] = ["LEAD", "CLOSED", "IN_PROGRESS", "DELIVERED", "PAID"];
+const STATUS_ORDER: DealStatus[] = ["LEAD", "CLOSED", "IN_PROGRESS", "DELIVERED", "PAID", "CANCELLED"];
 
 function monthKey(date: Date) {
   return `${date.getFullYear()}-${date.getMonth()}`;
@@ -132,6 +134,7 @@ export default async function HomePage() {
       IN_PROGRESS: 0,
       DELIVERED: 0,
       PAID: 0,
+      CANCELLED: 0,
     };
 
     for (const deal of deals) {
@@ -527,7 +530,7 @@ export default async function HomePage() {
 
   const assignments = await db.dealAssignment.findMany({
     where: { userId: user.id },
-    include: { deal: true },
+    include: { deal: { include: { payments: true } } },
   });
 
   let entitled = 0;

@@ -15,6 +15,7 @@ const STATUS_LABELS: Record<DealStatus, string> = {
   IN_PROGRESS: "In progress",
   DELIVERED: "Delivered",
   PAID: "Paid",
+  CANCELLED: "Cancelled",
 };
 
 export default async function DealDetailPage({

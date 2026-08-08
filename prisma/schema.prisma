@@ -107,6 +107,7 @@ enum DealStatus {
   IN_PROGRESS
   DELIVERED
   PAID
+  CANCELLED
 }
 
 // ─── Who works on what ───

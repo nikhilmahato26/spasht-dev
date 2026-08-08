@@ -32,8 +32,6 @@ export function DealMoneyForm({
 }) {
   const [totalPrice, setTotalPrice] = useState(defaultTotalPrice);
   const [fixedCosts, setFixedCosts] = useState(defaultFixedCosts);
-  const [marketingPercent, setMarketingPercent] = useState(defaultMarketingPercent);
-  const [devPoolPercent, setDevPoolPercent] = useState(defaultDevPoolPercent);
 
   const netEarning = Math.max(0, totalPrice - fixedCosts);
 
@@ -72,21 +70,6 @@ export function DealMoneyForm({
     });
   }
 
-  const marketingPool = Math.round((netEarning * marketingPercent) / 100);
-  const devPool = Math.round((netEarning * devPoolPercent) / 100);
-
-  function handleMarketingChange(value: number) {
-    const clamped = clamp(value, 0, 100);
-    setMarketingPercent(clamped);
-    setDevPoolPercent(100 - clamped);
-  }
-
-  function handleDevPoolChange(value: number) {
-    const clamped = clamp(value, 0, 100);
-    setDevPoolPercent(clamped);
-    setMarketingPercent(100 - clamped);
-  }
-
   function updateRow(userId: string, patch: Partial<RowState>) {
     setRows((prev) => ({ ...prev, [userId]: { ...prev[userId], ...patch } }));
   }
@@ -104,16 +87,8 @@ export function DealMoneyForm({
     const clampedMoney = clamp(money, 0, Infinity);
     const rawPercent = netEarning > 0 ? (clampedMoney / netEarning) * 100 : 0;
     const percent = clamp(rawPercent, 0, 100);
+    
     updateRow(userId, { money: clampedMoney, percent });
-  }
-
-  // A DEV assignee's % (with their dev teammates) should total at most
-  // devPoolPercent; a MARKETING assignee's % should total at most
-  // marketingPercent — each is a slice of that same shared budget.
-  function otherRowsMoneySum(userId: string, memberType: MemberType) {
-    return users
-      .filter((u) => u.type === memberType && u.id !== userId)
-      .reduce((sum, u) => sum + (rows[u.id]?.checked ? rows[u.id].money || 0 : 0), 0);
   }
 
   const totalAssignedMoney = users.reduce(
@@ -134,9 +109,29 @@ export function DealMoneyForm({
     }
   }, [isFullyAssigned, netEarning, totalAssignedMoney]);
 
+  const currentMarketingSum = users
+    .filter((u) => u.type === "MARKETING")
+    .reduce((sum, u) => sum + (rows[u.id]?.checked ? rows[u.id].money || 0 : 0), 0);
+
+  const currentDevSum = users
+    .filter((u) => u.type === "DEV")
+    .reduce((sum, u) => sum + (rows[u.id]?.checked ? rows[u.id].money || 0 : 0), 0);
+
+  // If no money is assigned yet, fallback to the default percentages passed in so the server saves reasonable defaults
+  const dynamicMarketingPercent = netEarning > 0 && totalAssignedMoney > 0 
+    ? (currentMarketingSum / netEarning) * 100 
+    : defaultMarketingPercent;
+    
+  const dynamicDevPoolPercent = netEarning > 0 && totalAssignedMoney > 0 
+    ? (currentDevSum / netEarning) * 100 
+    : defaultDevPoolPercent;
+
   return (
     <>
-      <div className="grid grid-cols-2 gap-4">
+      <input type="hidden" name="marketingPercent" value={dynamicMarketingPercent} />
+      <input type="hidden" name="devPoolPercent" value={dynamicDevPoolPercent} />
+      
+      <div className="grid grid-cols-3 gap-4 mb-4">
         <div className="flex flex-col gap-1">
           <label className="text-xs uppercase tracking-label text-text-muted font-semibold">
             Total price (₹) *
@@ -168,41 +163,6 @@ export function DealMoneyForm({
             className="border border-border rounded-input px-3 py-2 text-base bg-surface font-mono"
           />
         </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs uppercase tracking-label text-text-muted font-semibold">
-            Marketing % <span className="normal-case text-text-faint">(₹{marketingPool})</span>
-          </label>
-          <input
-            type="number"
-            name="marketingPercent"
-            min="0"
-            max="100"
-            step="0.1"
-            value={marketingPercent}
-            onWheel={(e) => e.currentTarget.blur()}
-            onChange={(e) => handleMarketingChange(Number(e.target.value))}
-            className="border border-border rounded-input px-3 py-2 text-base bg-surface font-mono"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs uppercase tracking-label text-text-muted font-semibold">
-            Dev pool % <span className="normal-case text-text-faint">(₹{devPool})</span>
-          </label>
-          <input
-            type="number"
-            name="devPoolPercent"
-            min="0"
-            max="100"
-            step="0.1"
-            value={devPoolPercent}
-            onWheel={(e) => e.currentTarget.blur()}
-            onChange={(e) => handleDevPoolChange(Number(e.target.value))}
-            className="border border-border rounded-input px-3 py-2 text-base bg-surface font-mono"
-          />
-        </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs uppercase tracking-label text-text-muted font-semibold">
             Advance received (₹)
@@ -218,15 +178,14 @@ export function DealMoneyForm({
           />
         </div>
       </div>
-      <p className="text-2xs text-text-faint -mt-3">
-        Marketing % and Dev pool % always add up to 100% of net earning — editing one adjusts the
-        other.
-      </p>
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs uppercase tracking-label text-text-muted font-semibold">
-            Team assignments
+          <p className="text-xs uppercase tracking-label text-text-muted font-semibold flex items-center gap-3">
+            <span>Team assignments</span>
+            <span className="text-text-faint font-normal normal-case">
+              (Approx pools: Marketing ~{Math.round(dynamicMarketingPercent)}% / Dev ~{Math.round(dynamicDevPoolPercent)}%)
+            </span>
           </p>
           <div
             className={`text-sm font-medium ${
@@ -248,13 +207,6 @@ export function DealMoneyForm({
         <div className="border border-border rounded-card divide-y divide-border">
           {users.map((u) => {
             const row = rows[u.id];
-            const typeBudgetMoney = u.type === "MARKETING" ? marketingPool : devPool;
-            const maxMoney = clamp(
-              typeBudgetMoney - otherRowsMoneySum(u.id, u.type),
-              0,
-              typeBudgetMoney
-            );
-
             return (
               <div
                 key={u.id}
@@ -290,7 +242,6 @@ export function DealMoneyForm({
                   type="number"
                   value={row.money || ""}
                   min="0"
-                  max={maxMoney}
                   placeholder="₹"
                   onWheel={(e) => e.currentTarget.blur()}
                   onChange={(e) => handleMoneyChange(u.id, Number(e.target.value))}

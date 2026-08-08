@@ -8,7 +8,7 @@ export async function getUserPayoutSummary(userId: string) {
       include: { deal: { include: { client: true } }, user: true },
       orderBy: { deal: { createdAt: "desc" } },
     }),
-    db.payout.findMany({ where: { userId }, orderBy: { date: "desc" }, include: { deal: true } }),
+    db.payout.findMany({ where: { userId }, orderBy: { date: "desc" }, include: { deal: { include: { payments: true } } } }),
   ]);
 
   let entitled = 0;

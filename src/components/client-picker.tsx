@@ -16,11 +16,10 @@ export function ClientPicker({
   const [selected, setSelected] = useState<ClientOption | null>(defaultClient ?? null);
 
   const filtered = useMemo(() => {
-    if (!query) return clients.slice(0, 8);
+    if (!query) return clients;
     const q = query.toLowerCase();
     return clients
-      .filter((c) => c.name.toLowerCase().includes(q) || c.company?.toLowerCase().includes(q))
-      .slice(0, 8);
+      .filter((c) => c.name.toLowerCase().includes(q) || c.company?.toLowerCase().includes(q));
   }, [clients, query]);
 
   if (mode === "new") {

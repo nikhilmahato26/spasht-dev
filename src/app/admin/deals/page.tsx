@@ -11,6 +11,7 @@ const STATUS_LABELS: Record<DealStatus, string> = {
   IN_PROGRESS: "In progress",
   DELIVERED: "Delivered",
   PAID: "Paid",
+  CANCELLED: "Cancelled",
 };
 
 const STATUS_COLORS: Record<DealStatus, string> = {
@@ -19,6 +20,7 @@ const STATUS_COLORS: Record<DealStatus, string> = {
   IN_PROGRESS: "bg-marketing-soft text-marketing",
   DELIVERED: "bg-company-soft text-company",
   PAID: "bg-accent-soft text-accent",
+  CANCELLED: "bg-error-soft text-error",
 };
 
 export default async function DealsPage({
