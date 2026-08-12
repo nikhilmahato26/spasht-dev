@@ -63,11 +63,10 @@ export default async function NewDealPage() {
             <label className="text-xs uppercase tracking-label text-text-muted font-semibold">Status</label>
             <select
               name="status"
-              defaultValue="CLOSED"
+              defaultValue="LEAD"
               className="border border-border rounded-input px-3 py-2 text-base bg-surface"
             >
               <option value="LEAD">Lead</option>
-              <option value="CLOSED">Closed</option>
               <option value="IN_PROGRESS">In progress</option>
               <option value="DELIVERED">Delivered</option>
               <option value="PAID">Paid</option>

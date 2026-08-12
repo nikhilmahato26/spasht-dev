@@ -92,7 +92,6 @@ export default async function EditDealPage({
               className="border border-border rounded-input px-3 py-2 text-base bg-surface"
             >
               <option value="LEAD">Lead</option>
-              <option value="CLOSED">Closed</option>
               <option value="IN_PROGRESS">In progress</option>
               <option value="DELIVERED">Delivered</option>
               <option value="PAID">Paid</option>

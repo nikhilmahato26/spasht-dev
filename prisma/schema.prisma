@@ -83,7 +83,7 @@ model Deal {
   advanceReceived  Int      @default(0)
   dueMoney         Int      @default(0)
 
-  status           DealStatus @default(CLOSED)
+  status           DealStatus @default(LEAD)
   version          Int      @default(1)
 
   closedById  String?
@@ -103,7 +103,6 @@ model Deal {
 
 enum DealStatus {
   LEAD
-  CLOSED
   IN_PROGRESS
   DELIVERED
   PAID

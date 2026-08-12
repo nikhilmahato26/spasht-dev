@@ -29,7 +29,6 @@ import type { Deal, DealStatus } from "@/generated/prisma/client";
 
 const STATUS_LABELS: Record<DealStatus, string> = {
   LEAD: "Lead",
-  CLOSED: "Closed",
   IN_PROGRESS: "In progress",
   DELIVERED: "Delivered",
   PAID: "Paid",
@@ -38,14 +37,13 @@ const STATUS_LABELS: Record<DealStatus, string> = {
 
 const STATUS_HEX: Record<DealStatus, string> = {
   LEAD: "#A5A49C",
-  CLOSED: "#39568F",
   IN_PROGRESS: "#B9832A",
   DELIVERED: "#6B5490",
   PAID: "#0F6E5F",
   CANCELLED: "#9A3C3C",
 };
 
-const STATUS_ORDER: DealStatus[] = ["LEAD", "CLOSED", "IN_PROGRESS", "DELIVERED", "PAID", "CANCELLED"];
+const STATUS_ORDER: DealStatus[] = ["LEAD", "IN_PROGRESS", "DELIVERED", "PAID", "CANCELLED"];
 
 function monthKey(date: Date) {
   return `${date.getFullYear()}-${date.getMonth()}`;
@@ -130,7 +128,6 @@ export default async function HomePage() {
     const revenueByCategory = new Map<string, { name: string; color: string; value: number }>();
     const pipelineCounts: Record<DealStatus, number> = {
       LEAD: 0,
-      CLOSED: 0,
       IN_PROGRESS: 0,
       DELIVERED: 0,
       PAID: 0,

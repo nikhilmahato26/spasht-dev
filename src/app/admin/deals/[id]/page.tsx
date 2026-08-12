@@ -11,7 +11,6 @@ import type { DealStatus } from "@/generated/prisma/client";
 
 const STATUS_LABELS: Record<DealStatus, string> = {
   LEAD: "Lead",
-  CLOSED: "Deal closed",
   IN_PROGRESS: "In progress",
   DELIVERED: "Delivered",
   PAID: "Paid",
