@@ -59,7 +59,7 @@ export default async function DealsPage({
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-3xl font-semibold tracking-tight">Deals</h1>
         <Link
-          href="/deals/new"
+          href="/admin/deals/new"
           className="bg-text text-surface border border-text px-4 py-2.5 rounded-btn text-base font-medium hover:bg-black transition-colors"
         >
           + New deal
@@ -137,12 +137,12 @@ export default async function DealsPage({
             {deals.map((deal) => (
               <tr key={deal.id} className="border-b border-border last:border-0 hover:bg-surface-2">
                 <td className="px-4 py-3">
-                  <Link href={`/clients/${deal.client.id}`} className="hover:underline">
+                  <Link href={`/admin/clients/${deal.client.id}`} className="hover:underline">
                     {deal.client.name}
                   </Link>
                 </td>
                 <td className="px-4 py-3">
-                  <Link href={`/deals/${deal.id}`} className="font-medium hover:underline">
+                  <Link href={`/admin/deals/${deal.id}`} className="font-medium hover:underline">
                     {deal.projectName}
                   </Link>
                 </td>

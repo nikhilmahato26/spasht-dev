@@ -29,7 +29,7 @@ export async function createClient(formData: FormData) {
     entityType: "Client",
     entityId: client.id,
   });
-  redirect(`/clients/${client.id}`);
+  redirect(`/admin/clients/${client.id}`);
 }
 
 export async function updateClient(id: string, formData: FormData) {
@@ -44,8 +44,8 @@ export async function updateClient(id: string, formData: FormData) {
     entityType: "Client",
     entityId: id,
   });
-  revalidatePath(`/clients/${id}`);
-  redirect(`/clients/${id}`);
+  revalidatePath(`/admin/clients/${id}`);
+  redirect(`/admin/clients/${id}`);
 }
 
 export async function deleteClient(formData: FormData) {
@@ -55,7 +55,7 @@ export async function deleteClient(formData: FormData) {
 
   const dealCount = await db.deal.count({ where: { clientId: id } });
   if (dealCount > 0) {
-    redirect(`/clients/${id}?error=has-deals`);
+    redirect(`/admin/clients/${id}?error=has-deals`);
   }
 
   await db.client.delete({ where: { id } });
@@ -65,6 +65,6 @@ export async function deleteClient(formData: FormData) {
     entityType: "Client",
     entityId: id,
   });
-  revalidatePath("/clients");
-  redirect("/clients");
+  revalidatePath("/admin/clients");
+  redirect("/admin/clients");
 }

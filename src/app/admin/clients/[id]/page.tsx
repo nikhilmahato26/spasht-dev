@@ -55,7 +55,7 @@ export default async function ClientDetailPage({
         <div className="flex flex-col items-end gap-2">
           <div className="flex gap-2">
             <Link
-              href={`/clients/${client.id}/edit`}
+              href={`/admin/clients/${client.id}/edit`}
               className="bg-surface text-text border border-border px-4 py-2.5 rounded-btn text-base font-medium hover:border-text-faint transition-colors"
             >
               Edit
@@ -121,7 +121,7 @@ export default async function ClientDetailPage({
         {client.deals.map((deal) => (
           <Link
             key={deal.id}
-            href={`/deals/${deal.id}`}
+            href={`/admin/deals/${deal.id}`}
             className="flex items-center justify-between bg-surface border border-border rounded-card px-4 py-3 hover:border-text-faint transition-colors"
           >
             <div>

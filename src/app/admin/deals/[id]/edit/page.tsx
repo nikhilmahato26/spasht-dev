@@ -23,7 +23,7 @@ export default async function EditDealPage({
     deal.createdById === user.id ||
     deal.closedById === user.id ||
     deal.assignments.some((a) => a.userId === user.id);
-  if (!canEdit) redirect(`/deals/${deal.id}`);
+  if (!canEdit) redirect(`/admin/deals/${deal.id}`);
 
   const [categories, users] = await Promise.all([
     db.category.findMany({ orderBy: { name: "asc" } }),

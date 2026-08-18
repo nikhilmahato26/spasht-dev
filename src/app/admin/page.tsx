@@ -230,7 +230,7 @@ export default async function HomePage() {
               Last 6 months
             </span>
             <Link
-              href="/deals/new"
+              href="/admin/deals/new"
               className="bg-text text-surface border border-text px-4 py-2.5 rounded-btn text-base font-medium hover:bg-black transition-colors"
             >
               + New deal
@@ -326,7 +326,7 @@ export default async function HomePage() {
               </p>
               {dueDealsCount > 0 && (
                 <Link
-                  href="/deals?sort=dueMoney"
+                  href="/admin/deals?sort=dueMoney"
                   className="inline-block mt-3 bg-surface text-text border border-border px-3 py-1.5 rounded-btn text-sm font-medium hover:border-text-faint transition-colors"
                 >
                   View Details
@@ -348,7 +348,7 @@ export default async function HomePage() {
                   {teamMembersOwed.map(({ member, summary }) => (
                     <Link
                       key={member.id}
-                      href={`/team/${member.id}`}
+                      href={`/admin/team/${member.id}`}
                       className="flex items-center justify-between text-sm hover:underline"
                     >
                       <span>{member.name}</span>
@@ -357,7 +357,7 @@ export default async function HomePage() {
                   ))}
                 </div>
                 <Link
-                  href="/team"
+                  href="/admin/team"
                   className="inline-block mt-3 bg-surface text-text border border-border px-3 py-1.5 rounded-btn text-sm font-medium hover:border-text-faint transition-colors"
                 >
                   View Team
@@ -384,7 +384,7 @@ export default async function HomePage() {
                   </div>
                 </div>
                 <Link
-                  href={`/deals/${topDealWithRelations.id}`}
+                  href={`/admin/deals/${topDealWithRelations.id}`}
                   className="inline-block bg-surface text-text border border-border px-3 py-1.5 rounded-btn text-sm font-medium hover:border-text-faint transition-colors"
                 >
                   View Deal
@@ -463,7 +463,7 @@ export default async function HomePage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold">Recent Deals</h2>
-              <Link href="/deals" className="text-sm text-dev hover:underline">
+              <Link href="/admin/deals" className="text-sm text-dev hover:underline">
                 View all
               </Link>
             </div>
@@ -471,7 +471,7 @@ export default async function HomePage() {
               {recentDeals.map((deal) => (
                 <Link
                   key={deal.id}
-                  href={`/deals/${deal.id}`}
+                  href={`/admin/deals/${deal.id}`}
                   className="flex items-center justify-between bg-surface border border-border rounded-card px-4 py-3 shadow-sm hover:shadow-md hover:border-text-faint hover:-translate-y-0.5 transition-all duration-200"
                 >
                   <div>
@@ -492,7 +492,7 @@ export default async function HomePage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold">Top Clients</h2>
-              <Link href="/clients" className="text-sm text-dev hover:underline">
+              <Link href="/admin/clients" className="text-sm text-dev hover:underline">
                 View all
               </Link>
             </div>
@@ -500,7 +500,7 @@ export default async function HomePage() {
               {topClients.map((client) => (
                 <Link
                   key={client.id}
-                  href={`/clients/${client.id}`}
+                  href={`/admin/clients/${client.id}`}
                   className="flex items-center justify-between bg-surface border border-border rounded-card px-4 py-3 shadow-sm hover:shadow-md hover:border-text-faint hover:-translate-y-0.5 transition-all duration-200"
                 >
                   <p className="font-medium">{client.name}</p>
@@ -553,7 +553,7 @@ export default async function HomePage() {
 
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-semibold">My recent deals</h2>
-        <Link href="/deals" className="text-sm text-dev hover:underline">
+        <Link href="/admin/deals" className="text-sm text-dev hover:underline">
           View all
         </Link>
       </div>
@@ -561,7 +561,7 @@ export default async function HomePage() {
         {myDeals.slice(0, 5).map((deal) => (
           <Link
             key={deal.id}
-            href={`/deals/${deal.id}`}
+            href={`/admin/deals/${deal.id}`}
             className="flex items-center justify-between bg-surface border border-border rounded-card px-4 py-3 shadow-sm hover:shadow-md hover:border-text-faint hover:-translate-y-0.5 transition-all duration-200"
           >
             <div>

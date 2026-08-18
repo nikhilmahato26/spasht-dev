@@ -51,7 +51,7 @@ export default async function DealDetailPage({
           </div>
           <h1 className="font-display text-3xl font-semibold tracking-tight">{deal.projectName}</h1>
           <p className="text-sm text-text-faint mt-1">
-            <Link href={`/clients/${deal.client.id}`} className="hover:underline">
+            <Link href={`/admin/clients/${deal.client.id}`} className="hover:underline">
               {deal.client.name}
             </Link>
             {" · "}
@@ -72,7 +72,7 @@ export default async function DealDetailPage({
             {formatPaisa(deal.totalPrice)}
           </span>
           <Link
-            href={`/deals/${deal.id}/edit`}
+            href={`/admin/deals/${deal.id}/edit`}
             className="bg-surface text-text border border-border px-3 py-2 rounded-btn text-sm font-medium hover:border-text-faint transition-colors"
           >
             Edit

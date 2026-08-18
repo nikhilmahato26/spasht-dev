@@ -15,7 +15,7 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
 
 export default async function MyPayoutsPage() {
   const user = await requireUser();
-  if (user.role === "ADMIN") redirect("/team");
+  if (user.role === "ADMIN") redirect("/admin/team");
 
   const summary = await getUserPayoutSummary(user.id);
 
@@ -59,7 +59,7 @@ export default async function MyPayoutsPage() {
         {summary.dealEarnings.map(({ assignment, amount }) => (
           <Link
             key={assignment.id}
-            href={`/deals/${assignment.dealId}`}
+            href={`/admin/deals/${assignment.dealId}`}
             className="flex items-center justify-between bg-surface border border-border rounded-card px-4 py-3 hover:border-text-faint transition-colors"
           >
             <div>

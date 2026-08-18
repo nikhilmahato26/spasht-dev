@@ -81,7 +81,7 @@ export default async function TeamPage() {
             {rows.map(({ user, summary }) => (
               <tr key={user.id} className="border-b border-border last:border-0 hover:bg-surface-2">
                 <td className="px-4 py-3">
-                  <Link href={`/team/${user.id}`} className="font-medium hover:underline">
+                  <Link href={`/admin/team/${user.id}`} className="font-medium hover:underline">
                     {user.name}
                   </Link>
                   {!user.isActive && (

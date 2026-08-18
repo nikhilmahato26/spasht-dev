@@ -142,8 +142,8 @@ export async function createDeal(formData: FormData) {
     entityId: deal.id,
   });
 
-  revalidatePath("/deals");
-  redirect(`/deals/${deal.id}`);
+  revalidatePath("/admin/deals");
+  redirect(`/admin/deals/${deal.id}`);
 }
 
 export async function updateDeal(dealId: string, formData: FormData) {
@@ -214,8 +214,8 @@ export async function updateDeal(dealId: string, formData: FormData) {
     entityId: dealId,
   });
 
-  revalidatePath(`/deals/${dealId}`);
-  redirect(`/deals/${dealId}`);
+  revalidatePath(`/admin/deals/${dealId}`);
+  redirect(`/admin/deals/${dealId}`);
 }
 
 export async function deleteDeal(formData: FormData) {
@@ -225,8 +225,8 @@ export async function deleteDeal(formData: FormData) {
 
   await db.deal.delete({ where: { id } });
   await logAudit({ userId: user.id, action: "deal.delete", entityType: "Deal", entityId: id });
-  revalidatePath("/deals");
-  redirect("/deals");
+  revalidatePath("/admin/deals");
+  redirect("/admin/deals");
 }
 
 export async function addPayment(dealId: string, formData: FormData) {
@@ -252,7 +252,7 @@ export async function addPayment(dealId: string, formData: FormData) {
     entityId: dealId,
   });
 
-  revalidatePath(`/deals/${dealId}`);
+  revalidatePath(`/admin/deals/${dealId}`);
 }
 
 export async function addCostItem(dealId: string, formData: FormData) {
@@ -277,5 +277,5 @@ export async function addCostItem(dealId: string, formData: FormData) {
     entityId: dealId,
   });
 
-  revalidatePath(`/deals/${dealId}`);
+  revalidatePath(`/admin/deals/${dealId}`);
 }

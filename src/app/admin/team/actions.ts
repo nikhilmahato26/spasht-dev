@@ -40,7 +40,7 @@ export async function createMember(formData: FormData) {
     entityId: member.id,
   });
 
-  revalidatePath("/team");
+  revalidatePath("/admin/team");
 }
 
 export async function updateMember(userId: string, formData: FormData) {
@@ -62,8 +62,8 @@ export async function updateMember(userId: string, formData: FormData) {
     entityId: userId,
   });
 
-  revalidatePath("/team");
-  revalidatePath(`/team/${userId}`);
+  revalidatePath("/admin/team");
+  revalidatePath(`/admin/team/${userId}`);
 }
 
 export async function deleteMember(formData: FormData) {
@@ -72,7 +72,7 @@ export async function deleteMember(formData: FormData) {
   if (!userId) return;
 
   if (userId === admin.id) {
-    redirect(`/team/${userId}?error=self`);
+    redirect(`/admin/team/${userId}?error=self`);
   }
 
   const [assignmentCount, dealCount, payoutCount, auditCount] = await Promise.all([
@@ -83,7 +83,7 @@ export async function deleteMember(formData: FormData) {
   ]);
 
   if (assignmentCount > 0 || dealCount > 0 || payoutCount > 0 || auditCount > 0) {
-    redirect(`/team/${userId}?error=has-history`);
+    redirect(`/admin/team/${userId}?error=has-history`);
   }
 
   await db.user.delete({ where: { id: userId } });
@@ -94,8 +94,8 @@ export async function deleteMember(formData: FormData) {
     entityId: userId,
   });
 
-  revalidatePath("/team");
-  redirect("/team");
+  revalidatePath("/admin/team");
+  redirect("/admin/team");
 }
 
 export async function recordPayout(userId: string, formData: FormData) {
@@ -123,7 +123,7 @@ export async function recordPayout(userId: string, formData: FormData) {
     entityId: userId,
   });
 
-  revalidatePath(`/team/${userId}`);
-  revalidatePath("/team");
-  revalidatePath("/my-payouts");
+  revalidatePath(`/admin/team/${userId}`);
+  revalidatePath("/admin/team");
+  revalidatePath("/admin/my-payouts");
 }

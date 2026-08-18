@@ -53,6 +53,6 @@ export async function createExpense(formData: FormData) {
     entityId: dealId ?? costItem.id,
   });
 
-  revalidatePath("/expenses");
-  if (dealId) revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/admin/expenses");
+  if (dealId) revalidatePath(`/admin/deals/${dealId}`);
 }

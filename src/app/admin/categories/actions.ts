@@ -18,7 +18,7 @@ export async function createCategory(formData: FormData) {
     entityType: "Category",
     entityId: category.id,
   });
-  revalidatePath("/categories");
+  revalidatePath("/admin/categories");
 }
 
 export async function deleteCategory(formData: FormData) {
@@ -33,5 +33,5 @@ export async function deleteCategory(formData: FormData) {
     entityType: "Category",
     entityId: id,
   });
-  revalidatePath("/categories");
+  revalidatePath("/admin/categories");
 }

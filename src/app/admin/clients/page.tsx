@@ -15,7 +15,7 @@ export default async function ClientsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-3xl font-semibold tracking-tight">Clients</h1>
         <Link
-          href="/clients/new"
+          href="/admin/clients/new"
           className="bg-text text-surface border border-text px-4 py-2.5 rounded-btn text-base font-medium hover:bg-black transition-colors"
         >
           + New client
@@ -40,7 +40,7 @@ export default async function ClientsPage() {
               return (
                 <tr key={client.id} className="border-b border-border last:border-0 hover:bg-surface-2">
                   <td className="px-4 py-3">
-                    <Link href={`/clients/${client.id}`} className="font-medium hover:underline">
+                    <Link href={`/admin/clients/${client.id}`} className="font-medium hover:underline">
                       {client.name}
                     </Link>
                     {client.company && (

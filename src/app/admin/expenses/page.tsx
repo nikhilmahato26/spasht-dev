@@ -121,7 +121,7 @@ export default async function ExpensesPage({
 
       <div className="flex gap-2 mb-4">
         <Link
-          href="/expenses"
+          href="/admin/expenses"
           className={`text-sm px-3 py-1.5 rounded-btn border ${
             recurring !== "1"
               ? "bg-text text-surface border-text"
@@ -131,7 +131,7 @@ export default async function ExpensesPage({
           All
         </Link>
         <Link
-          href="/expenses?recurring=1"
+          href="/admin/expenses?recurring=1"
           className={`text-sm px-3 py-1.5 rounded-btn border ${
             recurring === "1"
               ? "bg-text text-surface border-text"
@@ -166,7 +166,7 @@ export default async function ExpensesPage({
                 </td>
                 <td className="px-4 py-3">
                   {item.deal ? (
-                    <Link href={`/deals/${item.deal.id}`} className="hover:underline">
+                    <Link href={`/admin/deals/${item.deal.id}`} className="hover:underline">
                       {item.deal.projectName}
                     </Link>
                   ) : (

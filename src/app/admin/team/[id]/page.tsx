@@ -225,7 +225,7 @@ export default async function TeamMemberPage({
         {summary.dealEarnings.map(({ assignment, amount, left }) => (
           <Link
             key={assignment.id}
-            href={`/deals/${assignment.dealId}`}
+            href={`/admin/deals/${assignment.dealId}`}
             className="flex items-center justify-between bg-surface border border-border rounded-card px-4 py-3 hover:border-text-faint transition-colors"
           >
             <div>
