@@ -1,9 +1,17 @@
 import Link from "next/link";
+import { Receipt, Repeat } from "lucide-react";
 import { requireUser } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { formatPaisa } from "@/lib/money";
 import { dealScopeWhere } from "@/lib/deals-data";
 import { SubmitButton } from "@/components/submit-button";
+import { FormSelect } from "@/components/form-select";
+import { SummaryCard } from "@/components/summary-card";
+import { Card } from "@/components/ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
 import { createExpense } from "./actions";
 
 export default async function ExpensesPage({
@@ -42,52 +50,28 @@ export default async function ExpensesPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-3xl font-semibold tracking-tight">Expenses</h1>
-      </div>
+      <PageHeader icon={Receipt} color="#AD4A3B" title="Expenses" />
 
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-surface border border-border rounded-card p-3.5">
-          <p className="text-xs uppercase tracking-label text-text-muted font-semibold">
-            Total expenses
-          </p>
-          <p className="font-mono text-2xl font-semibold mt-1.5 tracking-tighter">
-            {formatPaisa(total)}
-          </p>
-        </div>
-        <div className="bg-surface border border-border rounded-card p-3.5">
-          <p className="text-xs uppercase tracking-label text-text-muted font-semibold">
-            Recurring
-          </p>
-          <p className="font-mono text-2xl font-semibold mt-1.5 tracking-tighter">
-            {formatPaisa(recurringTotal)}
-          </p>
-        </div>
+        <SummaryCard label="Total expenses" value={formatPaisa(total)} color="#AD4A3B" icon={Receipt} />
+        <SummaryCard label="Recurring" value={formatPaisa(recurringTotal)} color="#9A5B13" icon={Repeat} />
       </div>
 
       <form
         action={createExpense}
         className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6 bg-surface border border-border rounded-card p-4"
       >
-        <select
+        <FormSelect
           name="dealId"
           required={!isAdmin}
-          defaultValue=""
-          className="border border-border rounded-input px-3 py-2 text-base bg-surface"
-        >
-          {isAdmin ? (
-            <option value="">General expense (no deal)</option>
-          ) : (
-            <option value="" disabled>
-              Deal
-            </option>
-          )}
-          {deals.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.projectName}
-            </option>
-          ))}
-        </select>
+          placeholder={isAdmin ? "General expense (no deal)" : "Deal"}
+          options={
+            isAdmin
+              ? [{ value: "", label: "General expense (no deal)" }, ...deals.map((d) => ({ value: d.id, label: d.projectName }))]
+              : deals.map((d) => ({ value: d.id, label: d.projectName }))
+          }
+          className="w-full h-auto py-2 rounded-input"
+        />
         <input
           name="label"
           placeholder="Label (e.g. Domain)"
@@ -120,78 +104,72 @@ export default async function ExpensesPage({
       </form>
 
       <div className="flex gap-2 mb-4">
-        <Link
-          href="/admin/expenses"
-          className={`text-sm px-3 py-1.5 rounded-btn border ${
-            recurring !== "1"
-              ? "bg-text text-surface border-text"
-              : "bg-surface text-text border-border hover:border-text-faint"
-          }`}
+        <Button
+          asChild
+          variant={recurring !== "1" ? "default" : "outline"}
+          className="h-auto text-sm px-3 py-1.5 rounded-btn"
         >
-          All
-        </Link>
-        <Link
-          href="/admin/expenses?recurring=1"
-          className={`text-sm px-3 py-1.5 rounded-btn border ${
-            recurring === "1"
-              ? "bg-text text-surface border-text"
-              : "bg-surface text-text border-border hover:border-text-faint"
-          }`}
+          <Link href="/admin/expenses">All</Link>
+        </Button>
+        <Button
+          asChild
+          variant={recurring === "1" ? "default" : "outline"}
+          className="h-auto text-sm px-3 py-1.5 rounded-btn"
         >
-          Recurring only
-        </Link>
+          <Link href="/admin/expenses?recurring=1">Recurring only</Link>
+        </Button>
       </div>
 
-      <div className="bg-surface border border-border rounded-card overflow-hidden overflow-x-auto">
-        <table className="w-full text-base">
-          <thead>
-            <tr className="border-b border-border text-xs uppercase tracking-label text-text-muted">
-              <th className="text-left font-semibold px-4 py-2.5">Label</th>
-              <th className="text-left font-semibold px-4 py-2.5">Deal</th>
-              <th className="text-left font-semibold px-4 py-2.5">Client</th>
-              <th className="text-left font-semibold px-4 py-2.5">Date</th>
-              <th className="text-right font-semibold px-4 py-2.5">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Card className="border border-border rounded-card ring-0 py-0 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5">Label</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5">Deal</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5">Client</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5">Date</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5 text-right">Amount</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {costItems.map((item) => (
-              <tr key={item.id} className="border-b border-border last:border-0 hover:bg-surface-2">
-                <td className="px-4 py-3">
+              <TableRow key={item.id}>
+                <TableCell className="px-4 py-3 whitespace-normal">
                   {item.label}
                   {item.isRecurring && (
-                    <span className="ml-2 text-2xs font-semibold px-2 py-0.5 rounded-badge uppercase tracking-[0.03em] bg-pending-soft text-pending">
+                    <Badge variant="secondary" className="ml-2 rounded-badge uppercase tracking-[0.03em] bg-pending-soft text-pending">
                       Recurring
-                    </span>
+                    </Badge>
                   )}
-                </td>
-                <td className="px-4 py-3">
+                </TableCell>
+                <TableCell className="px-4 py-3 whitespace-normal">
                   {item.deal ? (
                     <Link href={`/admin/deals/${item.deal.id}`} className="hover:underline">
                       {item.deal.projectName}
                     </Link>
                   ) : (
-                    <span className="text-2xs font-semibold px-2 py-0.5 rounded-badge uppercase tracking-[0.03em] bg-surface-2 text-text-muted">
+                    <Badge variant="secondary" className="rounded-badge uppercase tracking-[0.03em] bg-surface-2 text-text-muted">
                       General
-                    </span>
+                    </Badge>
                   )}
-                </td>
-                <td className="px-4 py-3 text-text-muted">{item.deal?.client.name ?? "—"}</td>
-                <td className="px-4 py-3 text-text-faint text-sm">
+                </TableCell>
+                <TableCell className="px-4 py-3 text-text-muted">{item.deal?.client.name ?? "—"}</TableCell>
+                <TableCell className="px-4 py-3 text-text-faint text-sm">
                   {item.createdAt.toLocaleDateString("en-IN", {
                     day: "2-digit",
                     month: "short",
                     year: "numeric",
                   })}
-                </td>
-                <td className="px-4 py-3 text-right font-mono">{formatPaisa(item.amount)}</td>
-              </tr>
+                </TableCell>
+                <TableCell className="px-4 py-3 text-right font-mono">{formatPaisa(item.amount)}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         {costItems.length === 0 && (
           <p className="text-text-muted text-sm px-4 py-6">No expenses recorded yet.</p>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

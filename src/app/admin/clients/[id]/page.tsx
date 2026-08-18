@@ -1,19 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Handshake, IndianRupee, Clock } from "lucide-react";
 import { requireUser } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { formatPaisa } from "@/lib/money";
 import { SubmitButton } from "@/components/submit-button";
+import { SummaryCard } from "@/components/summary-card";
+import { Card } from "@/components/ui/card";
 import { deleteClient } from "../actions";
-
-function SummaryCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-surface border border-border rounded-card p-3.5">
-      <p className="text-xs uppercase tracking-label text-text-muted font-semibold">{label}</p>
-      <p className="font-mono text-2xl font-semibold mt-1.5 tracking-tighter">{value}</p>
-    </div>
-  );
-}
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
@@ -96,12 +90,12 @@ export default async function ClientDetailPage({
       )}
 
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <SummaryCard label="Deals" value={String(client.deals.length)} />
-        <SummaryCard label="Total Revenue" value={formatPaisa(revenue)} />
-        <SummaryCard label="Outstanding Due" value={formatPaisa(due)} />
+        <SummaryCard label="Deals" value={String(client.deals.length)} color="#39568F" icon={Handshake} />
+        <SummaryCard label="Total Revenue" value={formatPaisa(revenue)} color="#0F6E5F" icon={IndianRupee} />
+        <SummaryCard label="Outstanding Due" value={formatPaisa(due)} color="#9A5B13" icon={Clock} />
       </div>
 
-      <div className="bg-surface border border-border rounded-card p-5 mb-6">
+      <Card className="border border-border rounded-card ring-0 p-5 gap-0 mb-6">
         <p className="text-xs uppercase tracking-label text-text-muted font-semibold mb-3">Contact</p>
         <dl className="grid grid-cols-2 gap-3">
           {client.phone && <Info label="Phone" value={client.phone} />}
@@ -114,7 +108,7 @@ export default async function ClientDetailPage({
         {!client.phone && !client.email && !client.address && !client.notes && (
           <p className="text-sm text-text-faint">No contact details yet.</p>
         )}
-      </div>
+      </Card>
 
       <h2 className="text-lg font-semibold mb-3">Deals</h2>
       <div className="flex flex-col gap-2">

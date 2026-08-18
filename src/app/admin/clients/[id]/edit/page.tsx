@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+import { Users } from "lucide-react";
 import { requireUser } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { ClientForm } from "@/components/client-form";
+import { PageHeader } from "@/components/page-header";
 import { updateClient } from "../../actions";
 
 export default async function EditClientPage({
@@ -19,7 +21,7 @@ export default async function EditClientPage({
 
   return (
     <div>
-      <h1 className="font-display text-3xl font-semibold tracking-tight mb-6">Edit client</h1>
+      <PageHeader icon={Users} color="#B9832A" title="Edit client" />
       <ClientForm action={action} defaultValues={client} submitLabel="Save changes" />
     </div>
   );

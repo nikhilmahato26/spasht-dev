@@ -1,20 +1,15 @@
 import Link from "next/link";
+import { Handshake, IndianRupee, Clock } from "lucide-react";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { formatPaisa } from "@/lib/money";
 import { getUserPayoutSummary } from "@/lib/payouts-data";
 import { SubmitButton } from "@/components/submit-button";
+import { SummaryCard } from "@/components/summary-card";
+import { FormSelect } from "@/components/form-select";
+import { Card } from "@/components/ui/card";
 import { deleteMember, recordPayout, updateMember } from "../actions";
-
-function SummaryCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-surface border border-border rounded-card p-3.5">
-      <p className="text-xs uppercase tracking-label text-text-muted font-semibold">{label}</p>
-      <p className="font-mono text-2xl font-semibold mt-1.5 tracking-tighter">{value}</p>
-    </div>
-  );
-}
 
 export default async function TeamMemberPage({
   params,
@@ -92,13 +87,13 @@ export default async function TeamMemberPage({
       )}
 
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <SummaryCard label="Total Entitled" value={formatPaisa(summary.entitled)} />
-        <SummaryCard label="Total Paid" value={formatPaisa(summary.paid)} />
-        <SummaryCard label="Total Due" value={formatPaisa(summary.due)} />
+        <SummaryCard label="Total Entitled" value={formatPaisa(summary.entitled)} color="#39568F" icon={Handshake} />
+        <SummaryCard label="Total Paid" value={formatPaisa(summary.paid)} color="#0F6E5F" icon={IndianRupee} />
+        <SummaryCard label="Total Due" value={formatPaisa(summary.due)} color="#9A5B13" icon={Clock} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-        <div className="bg-surface border border-border rounded-card p-5">
+        <Card className="border border-border rounded-card ring-0 p-5 gap-0">
           <p className="text-lg font-semibold mb-4">Role &amp; status</p>
           <form action={updateMemberForUser} className="flex flex-col gap-3">
             <div className="grid grid-cols-2 gap-3">
@@ -106,27 +101,31 @@ export default async function TeamMemberPage({
                 <label className="text-xs uppercase tracking-label text-text-muted font-semibold">
                   Role
                 </label>
-                <select
+                <FormSelect
                   name="role"
                   defaultValue={member.role}
-                  className="border border-border rounded-input px-3 py-2 text-base bg-surface"
-                >
-                  <option value="MEMBER">Member</option>
-                  <option value="ADMIN">Admin</option>
-                </select>
+                  placeholder="Role"
+                  options={[
+                    { value: "MEMBER", label: "Member" },
+                    { value: "ADMIN", label: "Admin" },
+                  ]}
+                  className="w-full h-auto py-2 rounded-input"
+                />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs uppercase tracking-label text-text-muted font-semibold">
                   Type
                 </label>
-                <select
+                <FormSelect
                   name="type"
                   defaultValue={member.type}
-                  className="border border-border rounded-input px-3 py-2 text-base bg-surface"
-                >
-                  <option value="DEV">Dev</option>
-                  <option value="MARKETING">Marketing</option>
-                </select>
+                  placeholder="Type"
+                  options={[
+                    { value: "DEV", label: "Dev" },
+                    { value: "MARKETING", label: "Marketing" },
+                  ]}
+                  className="w-full h-auto py-2 rounded-input"
+                />
               </div>
             </div>
             <label className="flex items-center gap-2 text-sm text-text-muted">
@@ -145,25 +144,25 @@ export default async function TeamMemberPage({
               Save
             </SubmitButton>
           </form>
-        </div>
+        </Card>
 
-        <div className="bg-surface border border-border rounded-card p-5">
+        <Card className="border border-border rounded-card ring-0 p-5 gap-0">
           <p className="text-lg font-semibold mb-4">Record payout</p>
           <form action={recordPayoutForUser} className="flex flex-col gap-3">
-            <select
+            <FormSelect
               name="dealId"
-              className="border border-border rounded-input px-3 py-2 text-base bg-surface"
-            >
-              <option value="">General Payout</option>
-              {summary.dealEarnings.map(({ assignment, left }) => {
-                if (left === 0) return null;
-                return (
-                  <option key={assignment.dealId} value={assignment.dealId}>
-                    {assignment.deal.client.name} - {assignment.deal.projectName} (Left: {formatPaisa(left)})
-                  </option>
-                );
-              })}
-            </select>
+              placeholder="General Payout"
+              options={[
+                { value: "", label: "General Payout" },
+                ...summary.dealEarnings
+                  .filter(({ left }) => left !== 0)
+                  .map(({ assignment, left }) => ({
+                    value: assignment.dealId,
+                    label: `${assignment.deal.client.name} - ${assignment.deal.projectName} (Left: ${formatPaisa(left)})`,
+                  })),
+              ]}
+              className="w-full h-auto py-2 rounded-input"
+            />
             <div className="grid grid-cols-2 gap-3">
               <input
                 type="number"
@@ -191,7 +190,7 @@ export default async function TeamMemberPage({
               Record payout
             </SubmitButton>
           </form>
-        </div>
+        </Card>
       </div>
 
       <h2 className="text-lg font-semibold mb-3">Payout ledger</h2>
@@ -200,7 +199,7 @@ export default async function TeamMemberPage({
           <div key={payout.id} className="flex items-center justify-between px-4 py-3">
             <div>
               <span className="text-base">{payout.method || "Payout"}</span>
-              {payout.deal && <span className="text-sm font-medium ml-2 bg-cost-soft px-2 py-0.5 rounded text-xs">{payout.deal.projectName}</span>}
+              {payout.deal && <span className="font-medium ml-2 bg-cost-soft px-2 py-0.5 rounded text-xs">{payout.deal.projectName}</span>}
               {payout.note && <span className="text-sm text-text-faint ml-2">· {payout.note}</span>}
             </div>
             <div className="flex items-center gap-3">

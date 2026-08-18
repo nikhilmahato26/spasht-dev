@@ -1,6 +1,8 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function SubmitButton({
   children,
@@ -14,8 +16,8 @@ export function SubmitButton({
   const { pending } = useFormStatus();
 
   return (
-    <button type="submit" disabled={pending} aria-busy={pending} className={className}>
+    <Button type="submit" disabled={pending} aria-busy={pending} className={cn("h-auto", className)}>
       {pending ? pendingText : children}
-    </button>
+    </Button>
   );
 }

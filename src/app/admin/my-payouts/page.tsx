@@ -1,17 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Handshake, IndianRupee, Clock, Wallet } from "lucide-react";
 import { requireUser } from "@/lib/dal";
 import { formatPaisa } from "@/lib/money";
 import { getUserPayoutSummary } from "@/lib/payouts-data";
-
-function SummaryCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-surface border border-border rounded-card p-3.5">
-      <p className="text-xs uppercase tracking-label text-text-muted font-semibold">{label}</p>
-      <p className="font-mono text-2xl font-semibold mt-1.5 tracking-tighter">{value}</p>
-    </div>
-  );
-}
+import { SummaryCard } from "@/components/summary-card";
+import { PageHeader } from "@/components/page-header";
 
 export default async function MyPayoutsPage() {
   const user = await requireUser();
@@ -21,12 +15,12 @@ export default async function MyPayoutsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl font-semibold tracking-tight mb-6">My Payouts</h1>
+      <PageHeader icon={Wallet} color="#9A5B13" title="My Payouts" />
 
       <div className="grid grid-cols-3 gap-3 mb-8">
-        <SummaryCard label="Total Entitled" value={formatPaisa(summary.entitled)} />
-        <SummaryCard label="Total Paid" value={formatPaisa(summary.paid)} />
-        <SummaryCard label="Total Due" value={formatPaisa(summary.due)} />
+        <SummaryCard label="Total Entitled" value={formatPaisa(summary.entitled)} color="#39568F" icon={Handshake} />
+        <SummaryCard label="Total Paid" value={formatPaisa(summary.paid)} color="#0F6E5F" icon={IndianRupee} />
+        <SummaryCard label="Total Due" value={formatPaisa(summary.due)} color="#9A5B13" icon={Clock} />
       </div>
 
       <h2 className="text-lg font-semibold mb-3">Payout ledger</h2>

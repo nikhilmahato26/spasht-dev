@@ -6,6 +6,7 @@ import { computeDealSplit, computeAssignmentAmount } from "@/lib/deal-calc";
 import { formatPaisa } from "@/lib/money";
 import { MoneyFlowBar } from "@/components/money-flow-bar";
 import { SubmitButton } from "@/components/submit-button";
+import { Badge } from "@/components/ui/badge";
 import { addPayment, addCostItem, deleteDeal } from "../actions";
 import type { DealStatus } from "@/generated/prisma/client";
 
@@ -38,16 +39,17 @@ export default async function DealDetailPage({
         <div>
           <div className="flex items-center gap-2 mb-1">
             {deal.category && (
-              <span
-                className="text-2xs font-semibold px-2.5 py-0.5 rounded-badge uppercase tracking-[0.03em]"
+              <Badge
+                variant="secondary"
+                className="rounded-badge uppercase tracking-[0.03em]"
                 style={{ backgroundColor: `${deal.category.color}22`, color: deal.category.color ?? undefined }}
               >
                 {deal.category.name}
-              </span>
+              </Badge>
             )}
-            <span className="text-2xs font-semibold px-2.5 py-0.5 rounded-badge uppercase tracking-[0.03em] bg-dev-soft text-dev">
+            <Badge variant="secondary" className="rounded-badge uppercase tracking-[0.03em] bg-dev-soft text-dev">
               {STATUS_LABELS[deal.status]}
-            </span>
+            </Badge>
           </div>
           <h1 className="font-display text-3xl font-semibold tracking-tight">{deal.projectName}</h1>
           <p className="text-sm text-text-faint mt-1">

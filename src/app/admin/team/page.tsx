@@ -1,9 +1,14 @@
 import Link from "next/link";
+import { UsersRound } from "lucide-react";
 import { requireAdmin } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { formatPaisa } from "@/lib/money";
 import { getUserPayoutSummary } from "@/lib/payouts-data";
 import { SubmitButton } from "@/components/submit-button";
+import { FormSelect } from "@/components/form-select";
+import { Card } from "@/components/ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { PageHeader } from "@/components/page-header";
 import { createMember } from "./actions";
 
 export default async function TeamPage() {
@@ -16,7 +21,7 @@ export default async function TeamPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl font-semibold tracking-tight mb-6">Team</h1>
+      <PageHeader icon={UsersRound} color="#9A5B13" title="Team" />
 
       <form
         action={createMember}
@@ -42,22 +47,26 @@ export default async function TeamPage() {
           required
           className="border border-border rounded-input px-3 py-2 text-base bg-surface"
         />
-        <select
+        <FormSelect
           name="role"
           defaultValue="MEMBER"
-          className="border border-border rounded-input px-3 py-2 text-base bg-surface"
-        >
-          <option value="MEMBER">Member</option>
-          <option value="ADMIN">Admin</option>
-        </select>
-        <select
+          placeholder="Role"
+          options={[
+            { value: "MEMBER", label: "Member" },
+            { value: "ADMIN", label: "Admin" },
+          ]}
+          className="w-full h-auto py-2 rounded-input"
+        />
+        <FormSelect
           name="type"
           defaultValue="DEV"
-          className="border border-border rounded-input px-3 py-2 text-base bg-surface"
-        >
-          <option value="DEV">Dev</option>
-          <option value="MARKETING">Marketing</option>
-        </select>
+          placeholder="Type"
+          options={[
+            { value: "DEV", label: "Dev" },
+            { value: "MARKETING", label: "Marketing" },
+          ]}
+          className="w-full h-auto py-2 rounded-input"
+        />
         <SubmitButton
           pendingText="Adding..."
           className="bg-text text-surface border border-text px-4 py-2 rounded-btn text-base font-medium hover:bg-black transition-colors disabled:opacity-60"
@@ -66,21 +75,21 @@ export default async function TeamPage() {
         </SubmitButton>
       </form>
 
-      <div className="bg-surface border border-border rounded-card overflow-hidden overflow-x-auto">
-        <table className="w-full text-base">
-          <thead>
-            <tr className="border-b border-border text-xs uppercase tracking-label text-text-muted">
-              <th className="text-left font-semibold px-4 py-2.5">Name</th>
-              <th className="text-left font-semibold px-4 py-2.5">Role</th>
-              <th className="text-right font-semibold px-4 py-2.5">Entitled</th>
-              <th className="text-right font-semibold px-4 py-2.5">Paid</th>
-              <th className="text-right font-semibold px-4 py-2.5">Due</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Card className="border border-border rounded-card ring-0 py-0 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5">Name</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5">Role</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5 text-right">Entitled</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5 text-right">Paid</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5 text-right">Due</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {rows.map(({ user, summary }) => (
-              <tr key={user.id} className="border-b border-border last:border-0 hover:bg-surface-2">
-                <td className="px-4 py-3">
+              <TableRow key={user.id}>
+                <TableCell className="px-4 py-3 whitespace-normal">
                   <Link href={`/admin/team/${user.id}`} className="font-medium hover:underline">
                     {user.name}
                   </Link>
@@ -90,25 +99,25 @@ export default async function TeamPage() {
                     </span>
                   )}
                   <p className="text-sm text-text-faint">{user.email}</p>
-                </td>
-                <td className="px-4 py-3 text-sm text-text-muted">
+                </TableCell>
+                <TableCell className="px-4 py-3 text-sm text-text-muted">
                   {user.role} · {user.type}
-                </td>
-                <td className="px-4 py-3 text-right font-mono">{formatPaisa(summary.entitled)}</td>
-                <td className="px-4 py-3 text-right font-mono">{formatPaisa(summary.paid)}</td>
-                <td className="px-4 py-3 text-right font-mono">
+                </TableCell>
+                <TableCell className="px-4 py-3 text-right font-mono">{formatPaisa(summary.entitled)}</TableCell>
+                <TableCell className="px-4 py-3 text-right font-mono">{formatPaisa(summary.paid)}</TableCell>
+                <TableCell className="px-4 py-3 text-right font-mono">
                   {summary.due > 0 ? (
                     <span className="text-pending">{formatPaisa(summary.due)}</span>
                   ) : (
                     <span className="text-text-faint">—</span>
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         {rows.length === 0 && <p className="text-text-muted text-sm px-4 py-6">No team members yet.</p>}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -1,8 +1,15 @@
 import Link from "next/link";
+import { Handshake } from "lucide-react";
 import { requireUser } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { formatPaisa } from "@/lib/money";
 import { dealScopeWhere } from "@/lib/deals-data";
+import { FormSelect } from "@/components/form-select";
+import { Card } from "@/components/ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
 import type { DealStatus } from "@/generated/prisma/client";
 
 const STATUS_LABELS: Record<DealStatus, string> = {
@@ -18,7 +25,7 @@ const STATUS_COLORS: Record<DealStatus, string> = {
   IN_PROGRESS: "bg-marketing-soft text-marketing",
   DELIVERED: "bg-company-soft text-company",
   PAID: "bg-accent-soft text-accent",
-  CANCELLED: "bg-error-soft text-error",
+  CANCELLED: "bg-cost-soft text-cost",
 };
 
 export default async function DealsPage({
@@ -56,141 +63,134 @@ export default async function DealsPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-3xl font-semibold tracking-tight">Deals</h1>
-        <Link
-          href="/admin/deals/new"
-          className="bg-text text-surface border border-text px-4 py-2.5 rounded-btn text-base font-medium hover:bg-black transition-colors"
-        >
-          + New deal
-        </Link>
-      </div>
+      <PageHeader
+        icon={Handshake}
+        color="#39568F"
+        title="Deals"
+        action={
+          <Button asChild className="h-auto bg-text text-surface px-4 py-2.5 rounded-btn text-base font-medium hover:bg-black">
+            <Link href="/admin/deals/new">+ New deal</Link>
+          </Button>
+        }
+      />
 
       <form method="GET" className="flex flex-wrap gap-2 mb-5">
-        <select
+        <FormSelect
           name="status"
           defaultValue={params.status ?? ""}
-          className="border border-border rounded-input px-3 py-2 text-sm bg-surface"
-        >
-          <option value="">All statuses</option>
-          {Object.entries(STATUS_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <select
+          placeholder="All statuses"
+          options={[
+            { value: "", label: "All statuses" },
+            ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label })),
+          ]}
+          className="h-auto py-2 rounded-input text-sm"
+        />
+        <FormSelect
           name="categoryId"
           defaultValue={params.categoryId ?? ""}
-          className="border border-border rounded-input px-3 py-2 text-sm bg-surface"
-        >
-          <option value="">All categories</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <select
+          placeholder="All categories"
+          options={[
+            { value: "", label: "All categories" },
+            ...categories.map((c) => ({ value: c.id, label: c.name })),
+          ]}
+          className="h-auto py-2 rounded-input text-sm"
+        />
+        <FormSelect
           name="clientId"
           defaultValue={params.clientId ?? ""}
-          className="border border-border rounded-input px-3 py-2 text-sm bg-surface"
-        >
-          <option value="">All clients</option>
-          {clients.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <select
+          placeholder="All clients"
+          options={[
+            { value: "", label: "All clients" },
+            ...clients.map((c) => ({ value: c.id, label: c.name })),
+          ]}
+          className="h-auto py-2 rounded-input text-sm"
+        />
+        <FormSelect
           name="sort"
           defaultValue={params.sort ?? ""}
-          className="border border-border rounded-input px-3 py-2 text-sm bg-surface"
-        >
-          <option value="">Newest first</option>
-          <option value="dueMoney">Due money</option>
-          <option value="totalPrice">Total price</option>
-        </select>
-        <button
-          type="submit"
-          className="bg-surface text-text border border-border px-3 py-2 rounded-btn text-sm font-medium hover:border-text-faint transition-colors"
-        >
+          placeholder="Newest first"
+          options={[
+            { value: "", label: "Newest first" },
+            { value: "dueMoney", label: "Due money" },
+            { value: "totalPrice", label: "Total price" },
+          ]}
+          className="h-auto py-2 rounded-input text-sm"
+        />
+        <Button type="submit" variant="outline" className="h-auto text-sm px-3 py-2 rounded-btn">
           Apply
-        </button>
+        </Button>
       </form>
 
-      <div className="bg-surface border border-border rounded-card overflow-hidden overflow-x-auto">
-        <table className="w-full text-base">
-          <thead>
-            <tr className="border-b border-border text-xs uppercase tracking-label text-text-muted">
-              <th className="text-left font-semibold px-4 py-2.5">Client</th>
-              <th className="text-left font-semibold px-4 py-2.5">Project</th>
-              <th className="text-left font-semibold px-4 py-2.5">Category</th>
-              <th className="text-right font-semibold px-4 py-2.5">Total</th>
-              <th className="text-right font-semibold px-4 py-2.5">Due</th>
-              <th className="text-left font-semibold px-4 py-2.5">Status</th>
-              <th className="text-left font-semibold px-4 py-2.5">Created</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Card className="border border-border rounded-card ring-0 py-0 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5">Client</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5">Project</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5">Category</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5 text-right">Total</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5 text-right">Due</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5">Status</TableHead>
+              <TableHead className="h-auto text-xs uppercase tracking-label text-text-muted font-semibold px-4 py-2.5">Created</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {deals.map((deal) => (
-              <tr key={deal.id} className="border-b border-border last:border-0 hover:bg-surface-2">
-                <td className="px-4 py-3">
+              <TableRow key={deal.id}>
+                <TableCell className="px-4 py-3">
                   <Link href={`/admin/clients/${deal.client.id}`} className="hover:underline">
                     {deal.client.name}
                   </Link>
-                </td>
-                <td className="px-4 py-3">
+                </TableCell>
+                <TableCell className="px-4 py-3">
                   <Link href={`/admin/deals/${deal.id}`} className="font-medium hover:underline">
                     {deal.projectName}
                   </Link>
-                </td>
-                <td className="px-4 py-3">
+                </TableCell>
+                <TableCell className="px-4 py-3">
                   {deal.category ? (
-                    <span
-                      className="text-2xs font-semibold px-2.5 py-0.5 rounded-badge uppercase tracking-[0.03em]"
+                    <Badge
+                      variant="secondary"
+                      className="rounded-badge uppercase tracking-[0.03em]"
                       style={{
                         backgroundColor: `${deal.category.color}22`,
                         color: deal.category.color ?? undefined,
                       }}
                     >
                       {deal.category.name}
-                    </span>
+                    </Badge>
                   ) : (
                     <span className="text-text-faint">—</span>
                   )}
-                </td>
-                <td className="px-4 py-3 text-right font-mono">{formatPaisa(deal.totalPrice)}</td>
-                <td className="px-4 py-3 text-right font-mono">
+                </TableCell>
+                <TableCell className="px-4 py-3 text-right font-mono">{formatPaisa(deal.totalPrice)}</TableCell>
+                <TableCell className="px-4 py-3 text-right font-mono">
                   {deal.dueMoney > 0 ? (
                     <span className="text-pending">{formatPaisa(deal.dueMoney)}</span>
                   ) : (
                     <span className="text-text-faint">—</span>
                   )}
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`text-2xs font-semibold px-2.5 py-0.5 rounded-badge uppercase tracking-[0.03em] ${STATUS_COLORS[deal.status]}`}
-                  >
+                </TableCell>
+                <TableCell className="px-4 py-3">
+                  <Badge variant="secondary" className={`rounded-badge uppercase tracking-[0.03em] ${STATUS_COLORS[deal.status]}`}>
                     {STATUS_LABELS[deal.status]}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-text-faint text-sm">
+                  </Badge>
+                </TableCell>
+                <TableCell className="px-4 py-3 text-text-faint text-sm">
                   {deal.createdAt.toLocaleDateString("en-IN", {
                     day: "2-digit",
                     month: "short",
                     year: "numeric",
                   })}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         {deals.length === 0 && (
           <p className="text-text-muted text-sm px-4 py-6">No deals match these filters.</p>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

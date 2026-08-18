@@ -1,6 +1,9 @@
+import { Tag } from "lucide-react";
 import { requireUser } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { SubmitButton } from "@/components/submit-button";
+import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
 import { createCategory, deleteCategory } from "./actions";
 
 export default async function CategoriesPage() {
@@ -12,7 +15,7 @@ export default async function CategoriesPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl font-semibold tracking-tight mb-6">Categories</h1>
+      <PageHeader icon={Tag} color="#6B5490" title="Categories" />
 
       <form action={createCategory} className="flex gap-2 mb-6">
         <input
@@ -37,9 +40,9 @@ export default async function CategoriesPage() {
 
       <div className="flex flex-col gap-2">
         {categories.map((category) => (
-          <div
+          <Card
             key={category.id}
-            className="flex items-center justify-between bg-surface border border-border rounded-card px-4 py-3"
+            className="flex-row items-center justify-between border border-border rounded-card ring-0 gap-0 px-4 py-3"
           >
             <div className="flex items-center gap-2.5">
               <span
@@ -53,11 +56,11 @@ export default async function CategoriesPage() {
             </div>
             <form action={deleteCategory}>
               <input type="hidden" name="id" value={category.id} />
-              <SubmitButton pendingText="Deleting..." className="text-sm text-danger hover:underline disabled:opacity-60">
+              <SubmitButton pendingText="Deleting..." className="h-auto p-0 bg-transparent text-sm text-danger hover:underline hover:bg-transparent disabled:opacity-60">
                 Delete
               </SubmitButton>
             </form>
-          </div>
+          </Card>
         ))}
         {categories.length === 0 && (
           <p className="text-text-muted text-sm">No categories yet.</p>
