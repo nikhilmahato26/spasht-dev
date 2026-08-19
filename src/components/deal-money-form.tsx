@@ -88,7 +88,14 @@ export function DealMoneyForm({
     const rawPercent = netEarning > 0 ? (clampedMoney / netEarning) * 100 : 0;
     const percent = clamp(rawPercent, 0, 100);
     
-    updateRow(userId, { money: clampedMoney, percent });
+    const patch: Partial<RowState> = { money: clampedMoney, percent };
+    if (clampedMoney > 0) {
+      patch.checked = true;
+    } else if (clampedMoney === 0) {
+      patch.checked = false;
+    }
+    
+    updateRow(userId, patch);
   }
 
   const totalAssignedMoney = users.reduce(
