@@ -25,6 +25,8 @@ import { Sparkline } from "@/components/sparkline";
 import { RevenueTrendChart } from "@/components/revenue-trend-chart";
 import { RevenueDonut } from "@/components/revenue-donut";
 import { DealPipeline } from "@/components/deal-pipeline";
+import { FormSelect } from "@/components/form-select";
+import { Button } from "@/components/ui/button";
 import type { Deal, DealStatus } from "@/generated/prisma/client";
 
 const STATUS_LABELS: Record<DealStatus, string> = {
@@ -49,10 +51,9 @@ function monthKey(date: Date) {
   return `${date.getFullYear()}-${date.getMonth()}`;
 }
 
-function last6Months() {
-  const now = new Date();
+function last6Months(baseDate = new Date()) {
   return Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    const d = new Date(baseDate.getFullYear(), baseDate.getMonth() - (5 - i), 1);
     return { key: monthKey(d), label: d.toLocaleDateString("en-IN", { month: "short" }) };
   });
 }
@@ -102,15 +103,45 @@ function SummaryCard({
   );
 }
 
-export default async function HomePage() {
+export default async function HomePage(props: {
+  searchParams?: Promise<{ month?: string; categoryId?: string; status?: string }>;
+}) {
+  const searchParams = await props.searchParams;
   const user = await requireUser();
   const firstName = user.name?.split(" ")[0] ?? user.name;
 
   if (user.role === "ADMIN") {
-    const months = last6Months();
+    const categories = await db.category.findMany({ orderBy: { name: "asc" } });
+
+    const filterMonth = searchParams?.month;
+    const filterCategoryId = searchParams?.categoryId;
+    const filterStatus = searchParams?.status as DealStatus | undefined;
+
+    const where: any = {};
+    if (filterCategoryId) where.categoryId = filterCategoryId;
+    if (filterStatus) where.status = filterStatus;
+
+    let baseDate = new Date();
+    if (filterMonth) {
+      const [yearStr, monthStr] = filterMonth.split("-");
+      const year = parseInt(yearStr, 10);
+      const monthIndex = parseInt(monthStr, 10);
+      const start = new Date(year, monthIndex, 1);
+      const end = new Date(year, monthIndex + 1, 1);
+      where.createdAt = { gte: start, lt: end };
+      baseDate = start;
+    }
+
+    const months = last6Months(baseDate);
+
+    const now = new Date();
+    const monthOptions = Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      return { value: monthKey(d), label: d.toLocaleDateString("en-IN", { month: "long", year: "numeric" }) };
+    });
 
     const [deals, clients, recentAuditLogs] = await Promise.all([
-      db.deal.findMany({ include: { client: true, category: true } }),
+      db.deal.findMany({ where, include: { client: true, category: true } }),
       db.client.findMany({ include: { deals: { select: { totalPrice: true } } } }),
       db.auditLog.findMany({ take: 6, orderBy: { createdAt: "desc" }, include: { user: true } }),
     ]);
@@ -218,23 +249,55 @@ export default async function HomePage() {
 
     return (
       <div>
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
           <div>
             <h1 className="font-display text-3xl font-semibold tracking-tight">Home</h1>
             <p className="text-text-muted text-sm mt-1">
               Welcome back, {firstName}. Here&apos;s what&apos;s happening at spasht.dev.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-text-muted border border-border rounded-btn px-3 py-2 bg-surface font-mono">
-              Last 6 months
-            </span>
+          <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
             <Link
               href="/admin/deals/new"
-              className="bg-text text-surface border border-text px-4 py-2.5 rounded-btn text-base font-medium hover:bg-black transition-colors"
+              className="bg-text text-surface border border-text px-4 py-2.5 rounded-btn text-base font-medium hover:bg-black transition-colors self-end"
             >
               + New deal
             </Link>
+            <form method="GET" className="flex flex-wrap items-center justify-end gap-2 w-full">
+              <FormSelect
+                name="month"
+                defaultValue={filterMonth ?? ""}
+                placeholder="All time"
+                options={[
+                  { value: "", label: "All time" },
+                  ...monthOptions,
+                ]}
+                className="h-auto py-1.5 rounded-input text-sm w-[140px]"
+              />
+              <FormSelect
+                name="status"
+                defaultValue={filterStatus ?? ""}
+                placeholder="All statuses"
+                options={[
+                  { value: "", label: "All statuses" },
+                  ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label })),
+                ]}
+                className="h-auto py-1.5 rounded-input text-sm w-[130px]"
+              />
+              <FormSelect
+                name="categoryId"
+                defaultValue={filterCategoryId ?? ""}
+                placeholder="All categories"
+                options={[
+                  { value: "", label: "All categories" },
+                  ...categories.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+                className="h-auto py-1.5 rounded-input text-sm w-[140px]"
+              />
+              <Button type="submit" variant="outline" className="h-auto text-sm px-3 py-1.5 rounded-btn">
+                Filter
+              </Button>
+            </form>
           </div>
         </div>
 
