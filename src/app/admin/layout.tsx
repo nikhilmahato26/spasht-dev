@@ -1,5 +1,6 @@
 import {
   Bell,
+  Code,
   Handshake,
   Home,
   LogOut,
@@ -39,6 +40,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         { href: "/admin/clients", label: "Clients", icon: <Users {...iconProps} /> },
         { href: "/admin/expenses", label: "Expenses", icon: <Receipt {...iconProps} /> },
         { href: "/admin/categories", label: "Categories", icon: <Tag {...iconProps} /> },
+        ...(user.role === "ADMIN" || user.type === "DEV"
+          ? [{ href: "/admin/dev-projects", label: "Dev Projects", icon: <Code {...iconProps} /> }]
+          : []),
         ...(user.role === "ADMIN"
           ? [{ href: "/admin/team", label: "Team", icon: <UsersRound {...iconProps} /> }]
           : []),

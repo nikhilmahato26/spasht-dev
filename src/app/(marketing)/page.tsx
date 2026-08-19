@@ -7,12 +7,30 @@ import { Pricing } from "@/components/landing/pricing";
 import { Contact } from "@/components/landing/contact";
 import { Footer } from "@/components/landing/footer";
 
+import { db } from "@/lib/db";
+
 export const metadata: Metadata = {
   title: "Spasht.dev | Premium Digital Experiences",
   description: "We combine engineering precision with thoughtful design to deliver products that stand out and scale.",
 };
 
-export default function LandingPage() {
+export const revalidate = 3600; // revalidate every hour or rely on on-demand revalidation
+
+export default async function LandingPage() {
+  const dealsWithLinks = await db.deal.findMany({
+    where: {
+      link: { not: null },
+      status: { in: ["IN_PROGRESS", "DELIVERED", "PAID"] },
+    },
+    include: {
+      category: true,
+      assignments: {
+        include: { user: true }
+      }
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
   return (
     <div className="relative selection:bg-white/20 selection:text-white">
       <Navbar />
@@ -20,7 +38,7 @@ export default function LandingPage() {
         <Hero />
         <Features />
         <Pricing />
-        <Portfolio />
+        <Portfolio deals={dealsWithLinks} />
         <Contact />
       </main>
       <Footer />
