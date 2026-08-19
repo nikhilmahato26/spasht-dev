@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 type PortfolioProps = {
   deals: any[];
@@ -100,19 +101,21 @@ const wireframes = [
   )
 ];
 
-const classNames = [
-  "md:col-span-2 md:row-span-2",
-  "md:col-span-1 md:row-span-2",
-  "md:col-span-1 md:row-span-1",
-  "md:col-span-2 md:row-span-1",
-];
-
 export function Portfolio({ deals = [] }: PortfolioProps) {
+  const [activeTab, setActiveTab] = useState("All");
+
   if (deals.length === 0) return null; // Don't show if no portfolio items
+
+  // Get unique categories for the tabs
+  const categories = ["All", ...Array.from(new Set(deals.map(deal => deal.category?.name || "PROJECT")))] as string[];
+
+  const filteredDeals = activeTab === "All" 
+    ? deals 
+    : deals.filter(deal => (deal.category?.name || "PROJECT") === activeTab);
 
   return (
     <section id="portfolio" className="py-24 px-6 lg:px-12 bg-[#0a0a0a]">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <div className="inline-block border border-white/10 rounded-full px-4 py-1 mb-8">
             <span className="text-[10px] font-semibold tracking-widest uppercase text-white/60">Portfolio</span>
@@ -120,56 +123,75 @@ export function Portfolio({ deals = [] }: PortfolioProps) {
           <h2 className="text-4xl md:text-6xl font-serif text-white mb-6 leading-tight">
             Speaks for Itself.
           </h2>
-          <p className="text-base md:text-lg text-white/50 max-w-xl mx-auto">
+          <p className="text-base md:text-lg text-white/50 max-w-xl mx-auto mb-12">
             A selection of projects we've built for founders, startups, and growing businesses.
           </p>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-3 gap-6 auto-rows-[300px]">
-          {deals.map((deal, idx) => {
-            const wireframe = wireframes[idx % wireframes.length];
-            const className = classNames[idx % classNames.length];
-            const tags = deal.assignments?.map((a: any) => a.user.name).slice(0, 3) || [];
-            const categoryName = deal.category?.name || "PROJECT";
-
-            return (
-              <motion.div
-                key={deal.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.5, delay: (idx % 4) * 0.1 }}
-                className={`group flex flex-col overflow-hidden rounded-[24px] border border-white/5 bg-[#0e0e0e] hover:border-white/10 transition-colors ${className}`}
+          {/* Category Tabs */}
+          <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-8">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveTab(cat)}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                  activeTab === cat 
+                    ? "bg-white text-black" 
+                    : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                }`}
               >
-                <a href={deal.link} target="_blank" rel="noopener noreferrer" className="h-[200px] w-full p-4 pb-0 flex items-end justify-center cursor-pointer opacity-80 group-hover:opacity-100 transition-opacity">
-                  {wireframe}
-                </a>
-                <div className="p-6 pt-4 flex flex-col flex-1">
-                  <div className="text-[10px] font-semibold tracking-widest uppercase text-white/40 mb-2">
-                    {categoryName}
-                  </div>
-                  <h3 className="text-lg font-medium text-white/90 mb-2">
-                    <a href={deal.link} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-                      {deal.projectName}
-                    </a>
-                  </h3>
-                  <p className="text-xs text-white/50 leading-relaxed mb-4 flex-1">
-                    Delivered with excellence.
-                  </p>
-                  {tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-auto">
-                      {tags.map((tag: string, i: number) => (
-                        <span key={i} className="px-2 py-1 rounded-sm border border-white/10 bg-[#161616] text-[10px] text-white/60">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
+
+        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[350px]">
+          <AnimatePresence>
+            {filteredDeals.map((deal, idx) => {
+              const wireframe = wireframes[idx % wireframes.length];
+              const tags = deal.assignments?.filter((a: any) => a.user.type === "DEV").map((a: any) => a.user.name).slice(0, 3) || [];
+              const categoryName = deal.category?.name || "PROJECT";
+
+              return (
+                <motion.div
+                  layout
+                  key={deal.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="group flex flex-col overflow-hidden rounded-[24px] border border-white/5 bg-[#0e0e0e] hover:border-white/10 transition-colors"
+                >
+                  <a href={deal.link} target="_blank" rel="noopener noreferrer" className="h-[200px] w-full p-4 pb-0 flex items-end justify-center cursor-pointer opacity-80 group-hover:opacity-100 transition-opacity">
+                    {wireframe}
+                  </a>
+                  <div className="p-6 pt-4 flex flex-col flex-1">
+                    <div className="text-[10px] font-semibold tracking-widest uppercase text-white/40 mb-2">
+                      {categoryName}
+                    </div>
+                    <h3 className="text-lg font-medium text-white/90 mb-2">
+                      <a href={deal.link} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                        {deal.projectName}
+                      </a>
+                    </h3>
+                    <p className="text-xs text-white/50 leading-relaxed mb-4 flex-1">
+                      Delivered with excellence.
+                    </p>
+                    {tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-auto">
+                        {tags.map((tag: string, i: number) => (
+                          <span key={i} className="px-2 py-1 rounded-sm border border-white/10 bg-[#161616] text-[10px] text-white/60">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </motion.div>
       </div>
     </section>
   );
