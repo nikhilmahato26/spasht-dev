@@ -4,23 +4,45 @@ import { redirect } from "next/navigation";
 import { LinkInput } from "./link-input";
 import Link from "next/link";
 import { formatPaisa } from "@/lib/money";
+import { FormSelect } from "@/components/form-select";
+import { Button } from "@/components/ui/button";
 
 export const metadata = {
   title: "Dev Projects",
 };
 
-export default async function DevProjectsPage() {
+export default async function DevProjectsPage(props: {
+  searchParams?: Promise<{ categoryId?: string; devId?: string; q?: string }>;
+}) {
+  const searchParams = await props.searchParams;
   const user = await requireUser();
   if (user.role !== "ADMIN" && user.type !== "DEV") {
     redirect("/admin");
   }
 
-  // Fetch deals that have at least one DEV assigned to them, 
-  // or maybe all deals that are in progress / delivered / paid.
+  const [categories, devs] = await Promise.all([
+    db.category.findMany({ orderBy: { name: "asc" } }),
+    db.user.findMany({ where: { type: "DEV" }, orderBy: { name: "asc" } }),
+  ]);
+
+  const params = searchParams ?? {};
+
+  const where: any = {
+    status: { in: ["IN_PROGRESS", "DELIVERED", "PAID"] },
+    ...(params.categoryId ? { categoryId: params.categoryId } : {}),
+    ...(params.devId ? { assignments: { some: { userId: params.devId } } } : {}),
+    ...(params.q
+      ? {
+          OR: [
+            { projectName: { contains: params.q, mode: "insensitive" } },
+            { client: { name: { contains: params.q, mode: "insensitive" } } },
+          ],
+        }
+      : {}),
+  };
+
   const deals = await db.deal.findMany({
-    where: {
-      status: { in: ["IN_PROGRESS", "DELIVERED", "PAID"] },
-    },
+    where,
     orderBy: { createdAt: "desc" },
     include: {
       category: true,
@@ -36,11 +58,45 @@ export default async function DevProjectsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dev Projects</h1>
-        <p className="text-text-muted mt-1">
-          Track all team projects, assigned developers, and live domains.
-        </p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Dev Projects</h1>
+          <p className="text-text-muted mt-1">
+            Track all team projects, assigned developers, and live domains.
+          </p>
+        </div>
+        <form method="GET" className="flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            name="q"
+            placeholder="Search projects..."
+            defaultValue={params.q ?? ""}
+            className="h-auto py-2 rounded-input text-sm border border-border bg-surface px-3 w-full sm:w-[180px]"
+          />
+          <FormSelect
+            name="categoryId"
+            defaultValue={params.categoryId ?? ""}
+            placeholder="All categories"
+            options={[
+              { value: "", label: "All categories" },
+              ...categories.map((c) => ({ value: c.id, label: c.name })),
+            ]}
+            className="h-auto py-2 rounded-input text-sm w-full sm:w-[150px]"
+          />
+          <FormSelect
+            name="devId"
+            defaultValue={params.devId ?? ""}
+            placeholder="All devs"
+            options={[
+              { value: "", label: "All devs" },
+              ...devs.map((d) => ({ value: d.id, label: d.name })),
+            ]}
+            className="h-auto py-2 rounded-input text-sm w-full sm:w-[150px]"
+          />
+          <Button type="submit" variant="outline" className="h-auto text-sm px-3 py-2 rounded-btn w-full sm:w-auto">
+            Filter
+          </Button>
+        </form>
       </div>
 
       <div className="bg-surface border border-border rounded-card overflow-x-auto">

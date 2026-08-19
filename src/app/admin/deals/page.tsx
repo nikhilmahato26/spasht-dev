@@ -31,7 +31,7 @@ const STATUS_COLORS: Record<DealStatus, string> = {
 export default async function DealsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; categoryId?: string; clientId?: string; sort?: string }>;
+  searchParams: Promise<{ status?: string; categoryId?: string; clientId?: string; sort?: string; q?: string }>;
 }) {
   const user = await requireUser();
   const params = await searchParams;
@@ -41,11 +41,19 @@ export default async function DealsPage({
     db.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
-  const where = {
+  const where: any = {
     ...dealScopeWhere(user),
     ...(params.status ? { status: params.status as DealStatus } : {}),
     ...(params.categoryId ? { categoryId: params.categoryId } : {}),
     ...(params.clientId ? { clientId: params.clientId } : {}),
+    ...(params.q
+      ? {
+          OR: [
+            { projectName: { contains: params.q, mode: "insensitive" } },
+            { client: { name: { contains: params.q, mode: "insensitive" } } },
+          ],
+        }
+      : {}),
   };
 
   const orderBy =
@@ -75,6 +83,13 @@ export default async function DealsPage({
       />
 
       <form method="GET" className="flex flex-wrap gap-2 mb-5">
+        <input
+          type="text"
+          name="q"
+          placeholder="Search deals..."
+          defaultValue={params.q ?? ""}
+          className="h-auto py-2 rounded-input text-sm border border-border bg-surface px-3 min-w-[200px]"
+        />
         <FormSelect
           name="status"
           defaultValue={params.status ?? ""}
