@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import { Palette, Zap, Smartphone, Layers, Search, Gauge } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 const features = [
   {

@@ -171,7 +171,11 @@ export default async function DevProjectsPage(props: {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <LinkInput dealId={deal.id} initialLink={deal.link} />
+                      <LinkInput
+                        dealId={deal.id}
+                        initialLink={deal.link}
+                        initialPreviewImage={deal.previewImage}
+                      />
                     </td>
                   </tr>
                 );

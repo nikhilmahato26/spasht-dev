@@ -15,13 +15,13 @@ export function Contact() {
             </div>
             
             <h2 className="text-5xl md:text-7xl font-serif text-white mb-6 leading-[1.1]">
-              Let's Build<br />
+              Let&apos;s Build<br />
               <span className="italic text-white/70">Something</span><br />
               Amazing.
             </h2>
             
             <p className="text-base text-white/50 max-w-md mb-12 leading-relaxed">
-              Have a project in mind? Tell us about it and we'll get back to you within 24 hours with a tailored proposal.
+              Have a project in mind? Tell us about it and we&apos;ll get back to you within 24 hours with a tailored proposal.
             </p>
             
             <div className="space-y-6 mt-auto">

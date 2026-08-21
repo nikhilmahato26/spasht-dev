@@ -116,7 +116,7 @@ export default async function ClientDetailPage({
           <Link
             key={deal.id}
             href={`/admin/deals/${deal.id}`}
-            className="flex items-center justify-between bg-surface border border-border rounded-card px-4 py-3 hover:border-text-faint transition-colors"
+            className="flex items-center justify-between bg-surface border border-border rounded-card px-4 py-3 hover:border-text-faint hover:shadow-sm active:scale-[0.99] transition-all"
           >
             <div>
               <p className="font-medium">{deal.projectName}</p>
