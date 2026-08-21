@@ -1,106 +1,67 @@
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { signIn } from "@/auth";
-import { SubmitButton } from "@/components/submit-button";
-import { PasswordField } from "@/components/password-field";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Mail } from "lucide-react";
+import { SignInPage, Testimonial } from "@/components/ui/sign-in";
 import Image from "next/image";
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
+const loginTestimonials: Testimonial[] = [
+  {
+    avatarSrc: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    name: "Sarah Chen",
+    handle: "@sarahchen",
+    text: "Spasht streamlined our development pipeline completely. The engineering quality and attention to detail are exceptional.",
+  },
+  {
+    avatarSrc: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    name: "Marcus Vance",
+    handle: "@marcus_v",
+    text: "From concept to live deployment in days. Fast turnaround and scalable modern architecture.",
+  },
+  {
+    avatarSrc: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+    name: "Elena Rostova",
+    handle: "@elenarostova",
+    text: "The cleanest UI/UX we've had built for our startup. Intuitive, robust, and beautifully designed.",
+  },
+];
+
+export default async function LoginPage(props: {
+  searchParams?: Promise<{ error?: string }>;
 }) {
-  const { error } = await searchParams;
+  const searchParams = await props.searchParams;
+  const error = searchParams?.error;
+
+  async function handleSignIn(formData: FormData) {
+    "use server";
+    try {
+      await signIn("credentials", {
+        email: formData.get("email"),
+        password: formData.get("password"),
+        redirectTo: "/admin",
+      });
+    } catch (err) {
+      if (err instanceof AuthError) {
+        redirect("/login?error=CredentialsSignin");
+      }
+      throw err;
+    }
+  }
 
   return (
-    <>
-      <div className="rounded-card bg-text px-5 py-3 mb-5 shadow-[0_10px_24px_-10px_rgba(27,29,30,0.5)]">
-        <Image src="/logo.png" alt="Spasht.dev" width={379} height={88} className="h-6 w-auto" priority />
-      </div>
-
-      <h1 className="text-2xl font-semibold tracking-tight text-center">Welcome back!</h1>
-      <p className="text-sm text-text-muted mt-1.5 mb-6 text-center">
-        Enter email &amp; password to continue.
-      </p>
-
-      {error && (
-        <p className="w-full text-sm text-danger mb-4 bg-cost-soft border border-cost/30 rounded-input px-3 py-2 text-center">
-          Invalid email or password.
-        </p>
-      )}
-
-      <form
-        className="w-full"
-        action={async (formData) => {
-          "use server";
-          try {
-            await signIn("credentials", {
-              email: formData.get("email"),
-              password: formData.get("password"),
-              redirectTo: "/admin",
-            });
-          } catch (err) {
-            if (err instanceof AuthError) {
-              redirect("/login?error=CredentialsSignin");
-            }
-            throw err;
-          }
-        }}
-      >
-        <FieldGroup className="gap-3">
-          <Field>
-            <FieldLabel htmlFor="email" className="sr-only">Email</FieldLabel>
-            <InputGroup className="h-auto rounded-input">
-              <InputGroupAddon>
-                <Mail className="text-text-muted" strokeWidth={1.75} />
-              </InputGroupAddon>
-              <InputGroupInput
-                id="email"
-                name="email"
-                type="email"
-                required
-                placeholder="Enter your email address"
-                className="py-2.5 text-base placeholder:text-text-muted"
-              />
-            </InputGroup>
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="password" className="sr-only">Password</FieldLabel>
-            <PasswordField />
-          </Field>
-
-          <div className="flex items-center justify-between text-sm -mt-1">
-            <label className="flex items-center gap-2 text-text-muted cursor-pointer select-none">
-              <Checkbox name="remember" defaultChecked />
-              Remember me
-            </label>
-            <Link href="/forgot-password" className="text-text-muted hover:text-text transition-colors">
-              Forgot password
-            </Link>
-          </div>
-
-          <SubmitButton
-            pendingText="Signing in..."
-            className="mt-2 w-full bg-text text-surface px-4 py-3 rounded-full text-base font-medium shadow-[0_10px_24px_-10px_rgba(27,29,30,0.5)] hover:bg-black active:scale-[0.98] transition-all disabled:opacity-60 disabled:active:scale-100"
-          >
-            Sign In
-          </SubmitButton>
-        </FieldGroup>
-      </form>
-
-      <p className="text-sm text-text-muted mt-6 text-center">
-        Don&apos;t have an account? <span className="text-text font-medium">Ask your admin</span>
-      </p>
-
-      <p className="text-xs text-text-muted mt-8 text-center">
-        &copy; 2026 Spasht.dev. All rights reserved.
-      </p>
-    </>
+    <SignInPage
+      logo={
+        <div className="rounded-xl bg-text px-4 py-2.5 inline-flex items-center shadow-md">
+          <Image src="/logo.png" alt="Spasht.dev" width={120} height={28} className="h-5 w-auto" priority />
+        </div>
+      }
+      title={<span className="font-light text-foreground tracking-tight">Welcome back</span>}
+      description="Enter your email and password to access your dashboard."
+      heroImageSrc="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=2160&auto=format&fit=crop&q=80"
+      testimonials={loginTestimonials}
+      error={error ? "Invalid email or password. Please try again." : undefined}
+      showSocialLogin={false}
+      action={handleSignIn}
+      submitButtonText="Sign In"
+    />
   );
 }
