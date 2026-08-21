@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   description: "We combine engineering precision with thoughtful design to deliver products that stand out and scale.",
 };
 
-export const revalidate = 3600; // revalidate every hour or rely on on-demand revalidation
+export const dynamic = "force-dynamic";
 
 export default async function LandingPage() {
   const dealsWithLinks = await db.deal.findMany({
