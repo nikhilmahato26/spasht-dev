@@ -27,7 +27,7 @@ export default async function CategoriesPage() {
         <input
           name="color"
           type="color"
-          defaultValue="#39568F"
+          defaultValue="#39568f"
           className="w-11 h-[38px] border border-border rounded-input bg-surface p-1"
         />
         <SubmitButton

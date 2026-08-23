@@ -21,7 +21,7 @@ export default async function EditClientPage({
 
   return (
     <div>
-      <PageHeader icon={Users} color="#B9832A" title="Edit client" />
+      <PageHeader icon={Users} color="#b9832a" title="Edit client" />
       <ClientForm action={action} defaultValues={client} submitLabel="Save changes" />
     </div>
   );

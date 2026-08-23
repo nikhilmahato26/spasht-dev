@@ -152,16 +152,29 @@ model Payout {
   createdAt DateTime @default(now())
 }
 
+// ─── Expense Categories (for general, deal-less company overhead) ───
+
+model ExpenseCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  costItems CostItem[]
+}
+
 // ─── Itemized Costs (per deal, or general company overhead when dealId is null) ───
 
 model CostItem {
-  id          String   @id @default(cuid())
-  dealId      String?
-  deal        Deal?    @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  label       String
-  amount      Int
-  isRecurring Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id                String           @id @default(cuid())
+  dealId            String?
+  deal              Deal?            @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  expenseCategoryId String?
+  expenseCategory   ExpenseCategory? @relation(fields: [expenseCategoryId], references: [id])
+  team              MemberType?
+  label             String
+  amount            Int
+  isRecurring       Boolean          @default(false)
+  createdAt         DateTime         @default(now())
 }
 
 // ─── Audit Trail ───

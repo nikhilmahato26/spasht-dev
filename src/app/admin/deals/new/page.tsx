@@ -21,7 +21,7 @@ export default async function NewDealPage() {
 
   return (
     <div>
-      <PageHeader icon={Handshake} color="#39568F" title="New deal" />
+      <PageHeader icon={Handshake} color="#39568f" title="New deal" />
 
       <form action={createDeal} className="flex flex-col gap-5 max-w-2xl">
         <ClientPicker clients={clients} />

@@ -14,6 +14,7 @@ export function ClientPicker({
   const [mode, setMode] = useState<"existing" | "new">("existing");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<ClientOption | null>(defaultClient ?? null);
+  const [isOpen, setIsOpen] = useState(false);
 
   const filtered = useMemo(() => {
     if (!query) return clients;
@@ -100,11 +101,22 @@ export function ClientPicker({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setIsOpen(true)}
+            onBlur={() => setIsOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setIsOpen(false);
+                e.currentTarget.blur();
+              }
+            }}
             placeholder="Search clients..."
             className="border border-border rounded-input px-3 py-2 text-base bg-surface w-full"
           />
-          {filtered.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full bg-surface border border-border rounded-input shadow-sm max-h-48 overflow-y-auto">
+          {isOpen && filtered.length > 0 && (
+            <div
+              className="absolute z-10 mt-1 w-full bg-surface border border-border rounded-input shadow-sm max-h-48 overflow-y-auto"
+              onMouseDown={(e) => e.preventDefault()}
+            >
               {filtered.map((c) => (
                 <button
                   key={c.id}
@@ -112,6 +124,7 @@ export function ClientPicker({
                   onClick={() => {
                     setSelected(c);
                     setQuery("");
+                    setIsOpen(false);
                   }}
                   className="block w-full text-left px-3 py-2 text-base hover:bg-surface-2"
                 >

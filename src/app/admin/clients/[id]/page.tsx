@@ -90,8 +90,8 @@ export default async function ClientDetailPage({
       )}
 
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <SummaryCard label="Deals" value={String(client.deals.length)} color="#39568F" icon={Handshake} />
-        <SummaryCard label="Total Revenue" value={formatPaisa(revenue)} color="#0F6E5F" icon={IndianRupee} />
+        <SummaryCard label="Deals" value={String(client.deals.length)} color="#39568f" icon={Handshake} />
+        <SummaryCard label="Total Revenue" value={formatPaisa(revenue)} color="#0f6e5f" icon={IndianRupee} />
         <SummaryCard label="Outstanding Due" value={formatPaisa(due)} color="#9A5B13" icon={Clock} />
       </div>
 

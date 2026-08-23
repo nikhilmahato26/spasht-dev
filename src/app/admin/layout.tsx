@@ -65,14 +65,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="min-h-screen flex">
       <MobileSidebar>
         <div className="px-3 mb-7">
-          <Image 
-            src="/logo.png" 
-            alt="Spasht" 
-            width={140} 
-            height={40} 
-            className="w-auto h-8"
-            priority 
-          />
+          <div className="rounded-btn bg-text px-3 py-2 inline-flex items-center shadow-sm">
+            <Image
+              src="/logo.png"
+              alt="Spasht"
+              width={140}
+              height={40}
+              className="w-auto h-6"
+              priority
+            />
+          </div>
         </div>
 
         <SidebarNav groups={groups} />

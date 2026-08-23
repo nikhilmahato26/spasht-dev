@@ -27,6 +27,8 @@ import { RevenueDonut } from "@/components/revenue-donut";
 import { DealPipeline } from "@/components/deal-pipeline";
 import { FormSelect } from "@/components/form-select";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { STATUS_COLORS } from "@/lib/deal-status";
 import type { Deal, DealStatus } from "@/generated/prisma/client";
 
 const STATUS_LABELS: Record<DealStatus, string> = {
@@ -39,11 +41,40 @@ const STATUS_LABELS: Record<DealStatus, string> = {
 
 const STATUS_HEX: Record<DealStatus, string> = {
   LEAD: "#A5A49C",
-  IN_PROGRESS: "#B9832A",
+  IN_PROGRESS: "#b9832a",
   DELIVERED: "#6B5490",
-  PAID: "#0F6E5F",
-  CANCELLED: "#9A3C3C",
+  PAID: "#0f6e5f",
+  CANCELLED: "#9a3c3c",
 };
+
+// Flat, curated qualitative palette for the category donut — deliberately NOT
+// each category's own badge color, since those are user-picked per category
+// (via the color picker on the Categories page) and often collide or read too
+// close together in a chart. Cycles if there are more categories than colors.
+const CATEGORY_CHART_PALETTE = [
+  "#39568F", // dev blue
+  "#B9832A", // marketing gold
+  "#6B5490", // company purple
+  "#0F6E5F", // accent teal
+  "#AD4A3B", // cost red
+  "#9A5B13", // pending orange
+  "#71716B", // neutral gray (overflow / uncategorized)
+];
+
+function avatarColor(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+  return CATEGORY_CHART_PALETTE[Math.abs(hash) % CATEGORY_CHART_PALETTE.length];
+}
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join("");
+}
 
 const STATUS_ORDER: DealStatus[] = ["LEAD", "IN_PROGRESS", "DELIVERED", "PAID", "CANCELLED"];
 
@@ -55,6 +86,18 @@ function last6Months(baseDate = new Date()) {
   return Array.from({ length: 6 }, (_, i) => {
     const d = new Date(baseDate.getFullYear(), baseDate.getMonth() - (5 - i), 1);
     return { key: monthKey(d), label: d.toLocaleDateString("en-IN", { month: "short" }) };
+  });
+}
+
+function dayKey(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function last90Days() {
+  const now = new Date();
+  return Array.from({ length: 90 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (89 - i));
+    return dayKey(d);
   });
 }
 
@@ -74,19 +117,17 @@ function SummaryCard({
   sparkFormat?: "currency" | "count";
 }) {
   return (
-    <div className="group relative bg-surface border border-border rounded-card p-4 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
+    <div
+      className="group relative bg-surface border border-border rounded-card p-4 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
+      style={{ backgroundImage: `linear-gradient(to top, ${color}14, transparent 65%)` }}
+    >
       <div
         aria-hidden
         className="absolute -top-8 -right-8 w-28 h-28 rounded-full blur-2xl opacity-[0.15] group-hover:opacity-25 transition-opacity duration-200"
         style={{ backgroundColor: color }}
       />
-      <div className="relative flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-xs uppercase tracking-label text-text-muted font-semibold">{label}</p>
-          <p className="font-mono text-xl sm:text-[26px] font-semibold mt-1.5 tracking-tighter leading-none truncate">
-            {value}
-          </p>
-        </div>
+      <div className="relative flex items-center justify-between gap-2 mb-1.5">
+        <p className="text-xs uppercase tracking-label text-text-muted font-semibold">{label}</p>
         <div
           className="w-10 h-10 rounded-btn flex items-center justify-center shrink-0 shadow-sm"
           style={{ backgroundColor: color }}
@@ -94,6 +135,9 @@ function SummaryCard({
           <Icon size={18} strokeWidth={2.25} className="text-white" />
         </div>
       </div>
+      <p className="relative font-mono text-xl sm:text-[26px] font-semibold tracking-tighter leading-none">
+        {value}
+      </p>
       {sparkData && sparkFormat && (
         <div className="relative mt-2">
           <Sparkline data={sparkData} color={color} format={sparkFormat} />
@@ -152,12 +196,23 @@ export default async function HomePage(props: {
     const dealsCountByMonth = new Map(months.map((m) => [m.key, 0]));
     const clientsByMonth = new Map(months.map((m) => [m.key, 0]));
 
+    const days = last90Days();
+    const revenueByDay = new Map(days.map((d) => [d, 0]));
+    const marginByDay = new Map(days.map((d) => [d, 0]));
+
     let totalRevenue = 0;
     let totalMargin = 0;
     let totalDue = 0;
     let dueDealsCount = 0;
-    const revenueByCategory = new Map<string, { name: string; color: string; value: number }>();
+    const revenueByCategory = new Map<string, { name: string; value: number }>();
     const pipelineCounts: Record<DealStatus, number> = {
+      LEAD: 0,
+      IN_PROGRESS: 0,
+      DELIVERED: 0,
+      PAID: 0,
+      CANCELLED: 0,
+    };
+    const pipelineAmounts: Record<DealStatus, number> = {
       LEAD: 0,
       IN_PROGRESS: 0,
       DELIVERED: 0,
@@ -172,6 +227,7 @@ export default async function HomePage(props: {
       totalDue += deal.dueMoney;
       if (deal.dueMoney > 0) dueDealsCount += 1;
       pipelineCounts[deal.status] += 1;
+      pipelineAmounts[deal.status] += deal.totalPrice;
 
       const key = monthKey(deal.createdAt);
       if (revenueByMonth.has(key)) {
@@ -181,11 +237,16 @@ export default async function HomePage(props: {
         dealsCountByMonth.set(key, dealsCountByMonth.get(key)! + 1);
       }
 
+      const dKey = dayKey(deal.createdAt);
+      if (revenueByDay.has(dKey)) {
+        revenueByDay.set(dKey, revenueByDay.get(dKey)! + deal.totalPrice);
+        marginByDay.set(dKey, marginByDay.get(dKey)! + split.netEarning);
+      }
+
       const catName = deal.category?.name ?? "Uncategorized";
-      const catColor = deal.category?.color ?? "#A5A49C";
       const existing = revenueByCategory.get(catName);
       if (existing) existing.value += deal.totalPrice;
-      else revenueByCategory.set(catName, { name: catName, color: catColor, value: deal.totalPrice });
+      else revenueByCategory.set(catName, { name: catName, value: deal.totalPrice });
     }
 
     for (const client of clients) {
@@ -193,10 +254,10 @@ export default async function HomePage(props: {
       if (clientsByMonth.has(key)) clientsByMonth.set(key, clientsByMonth.get(key)! + 1);
     }
 
-    const trendData = months.map((m) => ({
-      label: m.label,
-      revenue: revenueByMonth.get(m.key)!,
-      margin: marginByMonth.get(m.key)!,
+    const dailyTrendData = days.map((d) => ({
+      date: d,
+      revenue: revenueByDay.get(d)!,
+      margin: marginByDay.get(d)!,
     }));
 
     const revenueSpark = months.map((m) => ({ label: m.label, value: revenueByMonth.get(m.key)! }));
@@ -214,7 +275,12 @@ export default async function HomePage(props: {
       : null;
 
     const topClients = clients
-      .map((c) => ({ id: c.id, name: c.name, revenue: c.deals.reduce((sum, d) => sum + d.totalPrice, 0) }))
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        dealCount: c.deals.length,
+        revenue: c.deals.reduce((sum, d) => sum + d.totalPrice, 0),
+      }))
       .filter((c) => c.revenue > 0)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
@@ -236,12 +302,15 @@ export default async function HomePage(props: {
       .sort((a, b) => b.summary.due - a.summary.due)
       .slice(0, 4);
 
-    const categoryDonutData = Array.from(revenueByCategory.values()).sort((a, b) => b.value - a.value);
+    const categoryDonutData = Array.from(revenueByCategory.values())
+      .sort((a, b) => b.value - a.value)
+      .map((slice, i) => ({ ...slice, color: CATEGORY_CHART_PALETTE[i % CATEGORY_CHART_PALETTE.length] }));
 
     const pipelineStages = STATUS_ORDER.map((status) => ({
       key: status,
       label: STATUS_LABELS[status],
       count: pipelineCounts[status],
+      amount: pipelineAmounts[status],
       color: STATUS_HEX[status],
     }));
 
@@ -305,7 +374,7 @@ export default async function HomePage(props: {
           <SummaryCard
             label="Total Revenue"
             value={formatPaisa(totalRevenue)}
-            color="#0F6E5F"
+            color="#0f6e5f"
             icon={IndianRupee}
             sparkData={revenueSpark}
             sparkFormat="currency"
@@ -313,7 +382,7 @@ export default async function HomePage(props: {
           <SummaryCard
             label="Active Deals"
             value={String(activeDealsCount)}
-            color="#39568F"
+            color="#39568f"
             icon={Handshake}
             sparkData={dealsSpark}
             sparkFormat="count"
@@ -337,7 +406,7 @@ export default async function HomePage(props: {
           <SummaryCard
             label="Clients"
             value={String(clients.length)}
-            color="#B9832A"
+            color="#b9832a"
             icon={Users}
             sparkData={clientsSpark}
             sparkFormat="count"
@@ -346,29 +415,7 @@ export default async function HomePage(props: {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
           <div className="lg:col-span-2 bg-surface border border-border rounded-card p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp size={16} className="text-dev" />
-              <p className="text-lg font-semibold">Performance Overview</p>
-            </div>
-            <div className="grid grid-cols-[140px_1fr] gap-4">
-              <div className="flex flex-col gap-4">
-                <div>
-                  <p className="flex items-center gap-1.5 text-sm text-text-muted">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#0F6E5F" }} />
-                    Revenue
-                  </p>
-                  <p className="font-mono text-lg font-semibold mt-0.5">{formatPaisa(totalRevenue)}</p>
-                </div>
-                <div>
-                  <p className="flex items-center gap-1.5 text-sm text-text-muted">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#6B5490" }} />
-                    Net Earning
-                  </p>
-                  <p className="font-mono text-lg font-semibold mt-0.5">{formatPaisa(totalMargin)}</p>
-                </div>
-              </div>
-              <RevenueTrendChart data={trendData} />
-            </div>
+            <RevenueTrendChart data={dailyTrendData} />
           </div>
 
           <div className="flex flex-col gap-4">
@@ -523,57 +570,82 @@ export default async function HomePage(props: {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div>
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-surface border border-border rounded-card shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-border">
               <h2 className="text-lg font-semibold">Recent Deals</h2>
               <Link href="/admin/deals" className="text-sm text-dev hover:underline">
                 View all
               </Link>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="divide-y divide-border">
               {recentDeals.map((deal) => (
                 <Link
                   key={deal.id}
                   href={`/admin/deals/${deal.id}`}
-                  className="flex items-center justify-between bg-surface border border-border rounded-card px-4 py-3 shadow-sm hover:shadow-md hover:border-text-faint hover:-translate-y-0.5 transition-all duration-200"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2 transition-colors"
                 >
-                  <div>
-                    <p className="font-medium">{deal.projectName}</p>
-                    <p className="text-sm text-text-faint">{deal.client.name}</p>
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-semibold"
+                    style={{ backgroundColor: avatarColor(deal.client.name) }}
+                  >
+                    {initials(deal.client.name)}
                   </div>
-                  <span className="font-mono text-base font-semibold">
-                    {formatPaisa(deal.totalPrice)}
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{deal.projectName}</p>
+                    <p className="text-sm text-text-faint truncate">{deal.client.name}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <Badge
+                      variant="secondary"
+                      className={`rounded-badge uppercase tracking-[0.03em] text-2xs ${STATUS_COLORS[deal.status]}`}
+                    >
+                      {STATUS_LABELS[deal.status]}
+                    </Badge>
+                    <span className="text-2xs text-text-faint whitespace-nowrap">
+                      {timeAgo(deal.createdAt)}
+                    </span>
+                  </div>
                 </Link>
               ))}
               {recentDeals.length === 0 && (
-                <p className="text-text-muted text-sm">No deals yet. Create your first one.</p>
+                <p className="text-text-muted text-sm px-4 py-6">No deals yet. Create your first one.</p>
               )}
             </div>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-surface border border-border rounded-card shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-border">
               <h2 className="text-lg font-semibold">Top Clients</h2>
               <Link href="/admin/clients" className="text-sm text-dev hover:underline">
                 View all
               </Link>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="divide-y divide-border">
               {topClients.map((client) => (
                 <Link
                   key={client.id}
                   href={`/admin/clients/${client.id}`}
-                  className="flex items-center justify-between bg-surface border border-border rounded-card px-4 py-3 shadow-sm hover:shadow-md hover:border-text-faint hover:-translate-y-0.5 transition-all duration-200"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2 transition-colors"
                 >
-                  <p className="font-medium">{client.name}</p>
-                  <span className="font-mono text-base font-semibold">
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-semibold"
+                    style={{ backgroundColor: avatarColor(client.name) }}
+                  >
+                    {initials(client.name)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{client.name}</p>
+                    <p className="text-sm text-text-faint truncate">
+                      {client.dealCount} deal{client.dealCount === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <span className="font-mono text-base font-semibold shrink-0">
                     {formatPaisa(client.revenue)}
                   </span>
                 </Link>
               ))}
               {topClients.length === 0 && (
-                <p className="text-text-muted text-sm">No client revenue yet.</p>
+                <p className="text-text-muted text-sm px-4 py-6">No client revenue yet.</p>
               )}
             </div>
           </div>
@@ -609,8 +681,8 @@ export default async function HomePage(props: {
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-8">
-        <SummaryCard label="My Entitled" value={formatPaisa(entitled)} color="#39568F" icon={Handshake} />
-        <SummaryCard label="My Paid" value={formatPaisa(paid)} color="#0F6E5F" icon={IndianRupee} />
+        <SummaryCard label="My Entitled" value={formatPaisa(entitled)} color="#39568f" icon={Handshake} />
+        <SummaryCard label="My Paid" value={formatPaisa(paid)} color="#0f6e5f" icon={IndianRupee} />
         <SummaryCard label="My Due" value={formatPaisa(due)} color="#9A5B13" icon={Clock} />
       </div>
 

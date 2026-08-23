@@ -9,6 +9,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "category.delete": "deleted a category",
   "payment.create": "recorded a payment",
   "costItem.create": "added a cost item",
+  "costItem.update": "updated a cost item",
+  "expenseCategory.create": "added an expense category",
   "user.create": "added a team member",
   "user.update": "updated a team member",
   "user.delete": "removed a team member",

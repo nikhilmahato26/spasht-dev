@@ -87,8 +87,8 @@ export default async function TeamMemberPage({
       )}
 
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <SummaryCard label="Total Entitled" value={formatPaisa(summary.entitled)} color="#39568F" icon={Handshake} />
-        <SummaryCard label="Total Paid" value={formatPaisa(summary.paid)} color="#0F6E5F" icon={IndianRupee} />
+        <SummaryCard label="Total Entitled" value={formatPaisa(summary.entitled)} color="#39568f" icon={Handshake} />
+        <SummaryCard label="Total Paid" value={formatPaisa(summary.paid)} color="#0f6e5f" icon={IndianRupee} />
         <SummaryCard label="Total Due" value={formatPaisa(summary.due)} color="#9A5B13" icon={Clock} />
       </div>
 

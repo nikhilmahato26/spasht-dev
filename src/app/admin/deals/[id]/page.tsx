@@ -7,16 +7,8 @@ import { formatPaisa } from "@/lib/money";
 import { MoneyFlowBar } from "@/components/money-flow-bar";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
+import { STATUS_LABELS } from "@/lib/deal-status";
 import { addPayment, addCostItem, deleteDeal } from "../actions";
-import type { DealStatus } from "@/generated/prisma/client";
-
-const STATUS_LABELS: Record<DealStatus, string> = {
-  LEAD: "Lead",
-  IN_PROGRESS: "In progress",
-  DELIVERED: "Delivered",
-  PAID: "Paid",
-  CANCELLED: "Cancelled",
-};
 
 export default async function DealDetailPage({
   params,

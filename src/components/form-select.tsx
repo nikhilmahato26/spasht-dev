@@ -12,6 +12,7 @@ export function FormSelect({
   options,
   className,
   required,
+  onValueChange,
 }: {
   name: string;
   defaultValue?: string;
@@ -19,13 +20,20 @@ export function FormSelect({
   options: { value: string; label: string; disabled?: boolean }[];
   className?: string;
   required?: boolean;
+  onValueChange?: (value: string) => void;
 }) {
   const [value, setValue] = useState(defaultValue || EMPTY);
 
   return (
     <>
       <input type="hidden" name={name} value={value === EMPTY ? "" : value} required={required} />
-      <Select value={value} onValueChange={setValue}>
+      <Select
+        value={value}
+        onValueChange={(v) => {
+          setValue(v);
+          onValueChange?.(v === EMPTY ? "" : v);
+        }}
+      >
         <SelectTrigger className={className}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>

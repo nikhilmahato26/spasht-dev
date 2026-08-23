@@ -8,7 +8,7 @@ export default async function NewClientPage() {
   await requireUser();
   return (
     <div>
-      <PageHeader icon={Users} color="#B9832A" title="New client" />
+      <PageHeader icon={Users} color="#b9832a" title="New client" />
       <ClientForm action={createClient} submitLabel="Create client" />
     </div>
   );

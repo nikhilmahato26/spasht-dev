@@ -39,7 +39,7 @@ export default async function EditDealPage({
 
   return (
     <div>
-      <PageHeader icon={Handshake} color="#39568F" title="Edit deal" />
+      <PageHeader icon={Handshake} color="#39568f" title="Edit deal" />
 
       <form action={action} className="flex flex-col gap-5 max-w-2xl">
         <div className="flex flex-col gap-1">
