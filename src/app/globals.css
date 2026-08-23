@@ -4,6 +4,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @theme {
   /* Fonts */
   --font-sans: var(--font-inter), system-ui, sans-serif;
