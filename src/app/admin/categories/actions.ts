@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
+import { capitalizeWords } from "@/lib/text";
 
 export async function createCategory(formData: FormData) {
   const user = await requireUser();
-  const name = String(formData.get("name") ?? "").trim();
+  const name = capitalizeWords(String(formData.get("name") ?? "").trim());
   const color = String(formData.get("color") ?? "").trim() || null;
   if (!name) return;
 
@@ -19,6 +20,23 @@ export async function createCategory(formData: FormData) {
     entityId: category.id,
   });
   revalidatePath("/admin/categories");
+}
+
+export async function updateCategory(id: string, formData: FormData) {
+  const user = await requireUser();
+  const name = capitalizeWords(String(formData.get("name") ?? "").trim());
+  const color = String(formData.get("color") ?? "").trim() || null;
+  if (!name) return;
+
+  await db.category.update({ where: { id }, data: { name, color } });
+  await logAudit({
+    userId: user.id,
+    action: "category.update",
+    entityType: "Category",
+    entityId: id,
+  });
+  revalidatePath("/admin/categories");
+  revalidatePath("/admin");
 }
 
 export async function deleteCategory(formData: FormData) {

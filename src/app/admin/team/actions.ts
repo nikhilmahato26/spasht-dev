@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { rupeesToPaisa } from "@/lib/money";
+import { capitalizeWords } from "@/lib/text";
 import type { MemberType, Role } from "@/generated/prisma/client";
 
 function str(formData: FormData, key: string) {
@@ -16,7 +17,7 @@ function str(formData: FormData, key: string) {
 export async function createMember(formData: FormData) {
   const admin = await requireAdmin();
 
-  const name = str(formData, "name");
+  const name = capitalizeWords(str(formData, "name"));
   const email = str(formData, "email");
   const password = str(formData, "password");
   const role = str(formData, "role") as Role;

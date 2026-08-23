@@ -7,9 +7,11 @@ type ClientOption = { id: string; name: string; company: string | null };
 export function ClientPicker({
   clients,
   defaultClient,
+  onNameChange,
 }: {
   clients: ClientOption[];
   defaultClient?: ClientOption;
+  onNameChange?: (name: string) => void;
 }) {
   const [mode, setMode] = useState<"existing" | "new">("existing");
   const [query, setQuery] = useState("");
@@ -30,7 +32,10 @@ export function ClientPicker({
           <p className="text-xs uppercase tracking-label text-text-muted font-semibold">New client</p>
           <button
             type="button"
-            onClick={() => setMode("existing")}
+            onClick={() => {
+              setMode("existing");
+              onNameChange?.(selected?.name ?? "");
+            }}
             className="text-sm text-dev hover:underline"
           >
             Pick existing instead
@@ -41,6 +46,7 @@ export function ClientPicker({
             name="newClientName"
             placeholder="Name *"
             required
+            onChange={(e) => onNameChange?.(e.target.value)}
             className="border border-border rounded-input px-3 py-2 text-base bg-surface col-span-2"
           />
           <input
@@ -73,6 +79,7 @@ export function ClientPicker({
           onClick={() => {
             setMode("new");
             setSelected(null);
+            onNameChange?.("");
           }}
           className="text-sm text-dev hover:underline"
         >
@@ -90,7 +97,10 @@ export function ClientPicker({
           </span>
           <button
             type="button"
-            onClick={() => setSelected(null)}
+            onClick={() => {
+              setSelected(null);
+              onNameChange?.("");
+            }}
             className="text-sm text-text-muted hover:text-text"
           >
             Change
@@ -125,6 +135,7 @@ export function ClientPicker({
                     setSelected(c);
                     setQuery("");
                     setIsOpen(false);
+                    onNameChange?.(c.name);
                   }}
                   className="block w-full text-left px-3 py-2 text-base hover:bg-surface-2"
                 >

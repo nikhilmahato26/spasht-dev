@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { rupeesToPaisa } from "@/lib/money";
 import { getDealForUser } from "@/lib/deals-data";
+import { capitalizeWords } from "@/lib/text";
 import type { MemberType } from "@/generated/prisma/client";
 
 function teamValue(formData: FormData): MemberType | null {
@@ -32,7 +33,7 @@ export async function createExpense(formData: FormData) {
 
   const expenseCategoryId = str(formData, "expenseCategoryId") || null;
   const team = teamValue(formData);
-  const label = str(formData, "label");
+  const label = capitalizeWords(str(formData, "label"));
   const amount = rupeesToPaisa(num(formData, "amount"));
   if (!label || !amount) return;
 
@@ -70,7 +71,7 @@ export async function updateExpense(id: string, formData: FormData) {
 
   const expenseCategoryId = str(formData, "expenseCategoryId") || null;
   const team = teamValue(formData);
-  const label = str(formData, "label");
+  const label = capitalizeWords(str(formData, "label"));
   const amount = rupeesToPaisa(num(formData, "amount"));
   if (!label || !amount) return;
 
@@ -127,7 +128,7 @@ export async function createExpenseCategory(formData: FormData) {
   const user = await requireUser();
   if (user.role !== "ADMIN") return;
 
-  const name = str(formData, "name");
+  const name = capitalizeWords(str(formData, "name"));
   if (!name) return;
 
   const category = await db.expenseCategory.upsert({

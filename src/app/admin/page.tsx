@@ -47,11 +47,11 @@ const STATUS_HEX: Record<DealStatus, string> = {
   CANCELLED: "#9a3c3c",
 };
 
-// Flat, curated qualitative palette for the category donut — deliberately NOT
-// each category's own badge color, since those are user-picked per category
-// (via the color picker on the Categories page) and often collide or read too
-// close together in a chart. Cycles if there are more categories than colors.
-const CATEGORY_CHART_PALETTE = [
+// Flat, curated qualitative palette for deterministic avatar coloring (Recent
+// Deals / Top Clients initials). Not used for categories — those use each
+// category's own color (set on the Categories page) everywhere, including
+// the revenue-by-category donut, so the color stays consistent across the app.
+const AVATAR_PALETTE = [
   "#39568F", // dev blue
   "#B9832A", // marketing gold
   "#6B5490", // company purple
@@ -64,7 +64,7 @@ const CATEGORY_CHART_PALETTE = [
 function avatarColor(seed: string) {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-  return CATEGORY_CHART_PALETTE[Math.abs(hash) % CATEGORY_CHART_PALETTE.length];
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
 }
 
 function initials(name: string) {
@@ -204,7 +204,7 @@ export default async function HomePage(props: {
     let totalMargin = 0;
     let totalDue = 0;
     let dueDealsCount = 0;
-    const revenueByCategory = new Map<string, { name: string; value: number }>();
+    const revenueByCategory = new Map<string, { name: string; value: number; color: string }>();
     const pipelineCounts: Record<DealStatus, number> = {
       LEAD: 0,
       IN_PROGRESS: 0,
@@ -244,9 +244,10 @@ export default async function HomePage(props: {
       }
 
       const catName = deal.category?.name ?? "Uncategorized";
+      const catColor = deal.category?.color ?? "#71716B";
       const existing = revenueByCategory.get(catName);
       if (existing) existing.value += deal.totalPrice;
-      else revenueByCategory.set(catName, { name: catName, value: deal.totalPrice });
+      else revenueByCategory.set(catName, { name: catName, value: deal.totalPrice, color: catColor });
     }
 
     for (const client of clients) {
@@ -302,9 +303,7 @@ export default async function HomePage(props: {
       .sort((a, b) => b.summary.due - a.summary.due)
       .slice(0, 4);
 
-    const categoryDonutData = Array.from(revenueByCategory.values())
-      .sort((a, b) => b.value - a.value)
-      .map((slice, i) => ({ ...slice, color: CATEGORY_CHART_PALETTE[i % CATEGORY_CHART_PALETTE.length] }));
+    const categoryDonutData = Array.from(revenueByCategory.values()).sort((a, b) => b.value - a.value);
 
     const pipelineStages = STATUS_ORDER.map((status) => ({
       key: status,

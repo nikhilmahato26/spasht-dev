@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { rupeesToPaisa } from "@/lib/money";
 import { recalcDue, getDealForUser } from "@/lib/deals-data";
+import { capitalizeWords } from "@/lib/text";
 import type { DealStatus } from "@/generated/prisma/client";
 
 function num(formData: FormData, key: string): number {
@@ -64,7 +65,7 @@ async function assignmentsWithinPoolLimits(
 export async function createDeal(formData: FormData) {
   const user = await requireUser();
 
-  const projectName = str(formData, "projectName");
+  const projectName = capitalizeWords(str(formData, "projectName"));
   const link = str(formData, "link") || null;
   const categoryId = str(formData, "categoryId") || null;
   const totalPrice = rupeesToPaisa(num(formData, "totalPrice"));
@@ -91,7 +92,7 @@ export async function createDeal(formData: FormData) {
     let resolvedClientId = clientId;
 
     if (!resolvedClientId) {
-      const newClientName = str(formData, "newClientName");
+      const newClientName = capitalizeWords(str(formData, "newClientName"));
       if (!newClientName) throw new Error("Client is required");
 
       const newClient = await tx.client.create({
@@ -99,7 +100,7 @@ export async function createDeal(formData: FormData) {
           name: newClientName,
           phone: str(formData, "newClientPhone") || null,
           email: str(formData, "newClientEmail") || null,
-          company: str(formData, "newClientCompany") || null,
+          company: capitalizeWords(str(formData, "newClientCompany")) || null,
         },
       });
       resolvedClientId = newClient.id;
@@ -158,7 +159,7 @@ export async function updateDeal(dealId: string, formData: FormData) {
     existing.assignments.some((a) => a.userId === user.id);
   if (!canEdit) return;
 
-  const projectName = str(formData, "projectName");
+  const projectName = capitalizeWords(str(formData, "projectName"));
   const link = str(formData, "link") || null;
   const categoryId = str(formData, "categoryId") || null;
   const totalPrice = rupeesToPaisa(num(formData, "totalPrice"));
@@ -257,7 +258,7 @@ export async function addPayment(dealId: string, formData: FormData) {
 
 export async function addCostItem(dealId: string, formData: FormData) {
   const user = await requireUser();
-  const label = str(formData, "label");
+  const label = capitalizeWords(str(formData, "label"));
   const amount = rupeesToPaisa(num(formData, "amount"));
   if (!label || !amount) return;
 

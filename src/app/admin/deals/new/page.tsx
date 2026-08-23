@@ -1,12 +1,12 @@
 import { Handshake } from "lucide-react";
 import { requireUser } from "@/lib/dal";
 import { db } from "@/lib/db";
-import { ClientPicker } from "@/components/client-picker";
 import { DealMoneyForm } from "@/components/deal-money-form";
 import { SubmitButton } from "@/components/submit-button";
 import { FormSelect } from "@/components/form-select";
 import { PageHeader } from "@/components/page-header";
 import { createDeal } from "../actions";
+import { DealNameSection } from "./deal-name-section";
 
 export default async function NewDealPage() {
   await requireUser();
@@ -24,28 +24,7 @@ export default async function NewDealPage() {
       <PageHeader icon={Handshake} color="#39568f" title="New deal" />
 
       <form action={createDeal} className="flex flex-col gap-5 max-w-2xl">
-        <ClientPicker clients={clients} />
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs uppercase tracking-label text-text-muted font-semibold">
-              Project name *
-            </label>
-            <input
-              name="projectName"
-              required
-              className="border border-border rounded-input px-3 py-2 text-base bg-surface"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs uppercase tracking-label text-text-muted font-semibold">Link</label>
-            <input
-              name="link"
-              placeholder="https://..."
-              className="border border-border rounded-input px-3 py-2 text-base bg-surface"
-            />
-          </div>
-        </div>
+        <DealNameSection clients={clients} />
 
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">

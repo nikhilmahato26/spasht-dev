@@ -5,13 +5,14 @@ import { revalidatePath } from "next/cache";
 import { requireUser, requireAdmin } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
+import { capitalizeWords } from "@/lib/text";
 
 function readClientFields(formData: FormData) {
   return {
-    name: String(formData.get("name") ?? "").trim(),
+    name: capitalizeWords(String(formData.get("name") ?? "").trim()),
     phone: String(formData.get("phone") ?? "").trim() || null,
     email: String(formData.get("email") ?? "").trim() || null,
-    company: String(formData.get("company") ?? "").trim() || null,
+    company: capitalizeWords(String(formData.get("company") ?? "").trim()) || null,
     address: String(formData.get("address") ?? "").trim() || null,
     notes: String(formData.get("notes") ?? "").trim() || null,
   };

@@ -5,6 +5,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { createCategory, deleteCategory } from "./actions";
+import { EditCategoryDialog } from "./edit-category-dialog";
 
 export default async function CategoriesPage() {
   await requireUser();
@@ -54,12 +55,15 @@ export default async function CategoriesPage() {
                 {category._count.deals} deal{category._count.deals === 1 ? "" : "s"}
               </span>
             </div>
-            <form action={deleteCategory}>
-              <input type="hidden" name="id" value={category.id} />
-              <SubmitButton pendingText="Deleting..." className="h-auto p-0 bg-transparent text-sm text-danger hover:underline hover:bg-transparent disabled:opacity-60">
-                Delete
-              </SubmitButton>
-            </form>
+            <div className="flex items-center gap-2">
+              <EditCategoryDialog category={category} />
+              <form action={deleteCategory}>
+                <input type="hidden" name="id" value={category.id} />
+                <SubmitButton pendingText="Deleting..." className="h-auto p-0 bg-transparent text-sm text-danger hover:underline hover:bg-transparent disabled:opacity-60">
+                  Delete
+                </SubmitButton>
+              </form>
+            </div>
           </Card>
         ))}
         {categories.length === 0 && (
