@@ -62,3 +62,15 @@ export function computeDueMoney(
 export function computeAssignmentAmount(netEarning: number, allocationPercent: number): number {
   return Math.round(netEarning * (allocationPercent / 100));
 }
+
+// The ₹ figure typed on the deal form is stored directly in allocationAmount
+// (paisa) and is authoritative. Deriving money from allocationPercent is only a
+// fallback for legacy rows: a percentage re-multiplied by netEarning both loses
+// precision and silently re-prices the assignment whenever the deal's total
+// price or fixed costs are edited later.
+export function resolveAssignmentAmount(
+  assignment: { allocationAmount?: number | null; allocationPercent: number },
+  netEarning: number
+): number {
+  return assignment.allocationAmount ?? computeAssignmentAmount(netEarning, assignment.allocationPercent);
+}

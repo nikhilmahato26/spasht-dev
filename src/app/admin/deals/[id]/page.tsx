@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/dal";
 import { getDealForUser } from "@/lib/deals-data";
-import { computeDealSplit, computeAssignmentAmount } from "@/lib/deal-calc";
+import { computeDealSplit, resolveAssignmentAmount } from "@/lib/deal-calc";
 import { formatPaisa } from "@/lib/money";
 import { MoneyFlowBar } from "@/components/money-flow-bar";
 import { SubmitButton } from "@/components/submit-button";
@@ -117,7 +117,7 @@ export default async function DealDetailPage({
             {deal.assignments.map((a) => {
               const isSelf = a.userId === user.id;
               const canSeeAmount = user.role === "ADMIN" || isSelf;
-              const amount = computeAssignmentAmount(split.netEarning, a.allocationPercent);
+              const amount = resolveAssignmentAmount(a, split.netEarning);
               return (
                 <div key={a.id} className="flex items-center justify-between px-4 py-2.5">
                   <div>

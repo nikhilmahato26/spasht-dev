@@ -1,11 +1,14 @@
 import { db } from "@/lib/db";
-import { computeDealSplit, computeAssignmentAmount } from "@/lib/deal-calc";
+import { computeDealSplit, resolveAssignmentAmount } from "@/lib/deal-calc";
 
 export async function getUserPayoutSummary(userId: string) {
   const [assignments, payouts] = await Promise.all([
     db.dealAssignment.findMany({
       where: { userId },
-      include: { deal: { include: { client: true } }, user: true },
+      // payments must be loaded: computeDealSplit only values a CANCELLED deal
+      // at cash-collected when deal.payments is present, otherwise it silently
+      // falls back to the full contract price and over-states entitlement.
+      include: { deal: { include: { client: true, payments: true } }, user: true },
       orderBy: { deal: { createdAt: "desc" } },
     }),
     db.payout.findMany({ where: { userId }, orderBy: { date: "desc" }, include: { deal: { include: { payments: true } } } }),
@@ -14,7 +17,7 @@ export async function getUserPayoutSummary(userId: string) {
   let entitled = 0;
   const dealEarnings = assignments.map((a) => {
     const split = computeDealSplit(a.deal);
-    const amount = computeAssignmentAmount(split.netEarning, a.allocationPercent);
+    const amount = resolveAssignmentAmount(a, split.netEarning);
     entitled += amount;
     
     const dealPayouts = payouts.filter(p => p.dealId === a.dealId);

@@ -1,10 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { paisaToRupees } from "@/lib/money";
 
 type MemberType = "DEV" | "MARKETING";
 type UserOption = { id: string; name: string; type: MemberType };
-type ExistingAssignment = { userId: string; role: string | null; allocationPercent: number };
+type ExistingAssignment = {
+  userId: string;
+  role: string | null;
+  allocationPercent: number;
+  /** Paisa. Authoritative when present — see resolveAssignmentAmount. */
+  allocationAmount?: number | null;
+};
 
 type RowState = { checked: boolean; role: string; percent: number; money: number };
 
@@ -47,7 +54,12 @@ export function DealMoneyForm({
             checked: !!existing,
             role: existing?.role ?? "",
             percent,
-            money: Math.round((netEarning * percent) / 100),
+            // Show the exact ₹ that was saved. Re-deriving it from the percent
+            // would reintroduce the rounding drift this field exists to avoid.
+            money:
+              existing?.allocationAmount != null
+                ? paisaToRupees(existing.allocationAmount)
+                : Math.round((netEarning * percent) / 100),
           },
         ];
       })
@@ -244,6 +256,9 @@ export function DealMoneyForm({
                   placeholder="%"
                   className="border border-border rounded-input px-2 py-1.5 text-sm bg-surface font-mono text-text-muted cursor-not-allowed opacity-70"
                 />
+                {/* amt_ is what actually gets saved; pct_ is only a display/
+                    validation mirror the server recomputes from the amount. */}
+                <input type="hidden" name={`amt_${u.id}`} value={row.money || ""} />
                 <input type="hidden" name={`pct_${u.id}`} value={row.percent || ""} />
                 <input
                   type="number"

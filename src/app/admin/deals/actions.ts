@@ -20,18 +20,25 @@ function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
 }
 
-async function readAssignments(formData: FormData) {
+// The ₹ figure typed on the form (amt_) is what gets stored — allocationPercent
+// is derived from it purely so the pool-limit validation and the read-only %
+// column keep working. netEarning is in paisa.
+async function readAssignments(formData: FormData, netEarning: number) {
   const userIds = new Set<string>();
   for (const key of formData.keys()) {
     const match = key.match(/^assign_(.+)$/);
     if (match) userIds.add(match[1]);
   }
 
-  return Array.from(userIds).map((userId) => ({
-    userId,
-    role: str(formData, `role_${userId}`) || null,
-    allocationPercent: num(formData, `pct_${userId}`),
-  }));
+  return Array.from(userIds).map((userId) => {
+    const allocationAmount = rupeesToPaisa(num(formData, `amt_${userId}`));
+    return {
+      userId,
+      role: str(formData, `role_${userId}`) || null,
+      allocationAmount,
+      allocationPercent: netEarning > 0 ? (allocationAmount / netEarning) * 100 : 0,
+    };
+  });
 }
 
 // allocationPercent is a direct share of net earning. A DEV assignee's %
@@ -83,7 +90,7 @@ export async function createDeal(formData: FormData) {
   // Fully paid up front: same auto-mark-PAID rule as recalcDue applies here too.
   const resolvedStatus = initialDueMoney === 0 ? "PAID" : status;
 
-  const assignments = await readAssignments(formData);
+  const assignments = await readAssignments(formData, totalPrice - fixedCosts);
   if (!(await assignmentsWithinPoolLimits(assignments, marketingPercent, devPoolPercent))) {
     throw new Error("Assignments exceed pool limits");
   }
@@ -125,6 +132,7 @@ export async function createDeal(formData: FormData) {
           create: assignments.map((a) => ({
             userId: a.userId,
             role: a.role,
+            allocationAmount: a.allocationAmount,
             allocationPercent: a.allocationPercent,
           })),
         },
@@ -169,7 +177,7 @@ export async function updateDeal(dealId: string, formData: FormData) {
   const advanceReceived = rupeesToPaisa(num(formData, "advanceReceived"));
   const status = str(formData, "status") as DealStatus;
   const closedById = str(formData, "closedById") || null;
-  const assignments = await readAssignments(formData);
+  const assignments = await readAssignments(formData, totalPrice - fixedCosts);
   if (!(await assignmentsWithinPoolLimits(assignments, marketingPercent, devPoolPercent))) {
     throw new Error("Assignments exceed pool limits");
   }
@@ -200,6 +208,7 @@ export async function updateDeal(dealId: string, formData: FormData) {
           dealId,
           userId: a.userId,
           role: a.role,
+          allocationAmount: a.allocationAmount,
           allocationPercent: a.allocationPercent,
         })),
       });

@@ -119,6 +119,11 @@ model DealAssignment {
   userId            String
   user              User   @relation(fields: [userId], references: [id])
   role              String?
+  // Authoritative payout share, in paisa — exactly the ₹ figure typed on the
+  // deal form. allocationPercent is kept only as a derived display/validation
+  // mirror; never recompute money from it when allocationAmount is set, or the
+  // amount silently changes whenever the deal's price or fixed costs change.
+  allocationAmount  Int?
   allocationPercent Float
 
   @@unique([dealId, userId])

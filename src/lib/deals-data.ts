@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { computeDueMoney, computeDealSplit, computeAssignmentAmount } from "@/lib/deal-calc";
+import { computeDueMoney, computeDealSplit, resolveAssignmentAmount } from "@/lib/deal-calc";
 
 export type ScopeUser = { id: string; role: "ADMIN" | "MEMBER" };
 
@@ -77,7 +77,7 @@ export async function recalcDue(dealId: string, actorId?: string) {
       });
 
       for (const a of dealWithAssignments.assignments) {
-        const entitled = computeAssignmentAmount(split.netEarning, a.allocationPercent);
+        const entitled = resolveAssignmentAmount(a, split.netEarning);
         const existingPayouts = await db.payout.aggregate({
           where: { userId: a.userId, dealId: a.dealId },
           _sum: { amount: true },

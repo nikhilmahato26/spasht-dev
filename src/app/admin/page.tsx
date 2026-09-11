@@ -16,7 +16,7 @@ import {
 import { requireUser } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { formatPaisa } from "@/lib/money";
-import { computeDealSplit, computeAssignmentAmount } from "@/lib/deal-calc";
+import { computeDealSplit, resolveAssignmentAmount } from "@/lib/deal-calc";
 import { listDealsForUser } from "@/lib/deals-data";
 import { getUserPayoutSummary } from "@/lib/payouts-data";
 import { timeAgo } from "@/lib/time-ago";
@@ -185,7 +185,9 @@ export default async function HomePage(props: {
     });
 
     const [deals, clients, recentAuditLogs] = await Promise.all([
-      db.deal.findMany({ where, include: { client: true, category: true } }),
+      // payments is required for computeDealSplit to value CANCELLED deals at
+      // cash-collected rather than falling back to the full contract price.
+      db.deal.findMany({ where, include: { client: true, category: true, payments: true } }),
       db.client.findMany({ include: { deals: { select: { totalPrice: true } } } }),
       db.auditLog.findMany({ take: 6, orderBy: { createdAt: "desc" }, include: { user: true } }),
     ]);
@@ -667,7 +669,7 @@ export default async function HomePage(props: {
   let entitled = 0;
   for (const a of assignments) {
     const split = computeDealSplit(a.deal);
-    entitled += computeAssignmentAmount(split.netEarning, a.allocationPercent);
+    entitled += resolveAssignmentAmount(a, split.netEarning);
   }
   const paid = myPayouts.reduce((sum, p) => sum + p.amount, 0);
   const due = Math.max(0, entitled - paid);
