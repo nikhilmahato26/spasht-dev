@@ -52,6 +52,19 @@ export default async function DealsPage({
     orderBy,
   });
 
+  // Advance-distribution status is only relevant once a deal is cancelled —
+  // swap the Due column for Advance Received + the Yes/No toggle, and show
+  // a log of who flipped it and when, only in that filtered view.
+  const isCancelledView = params.status === "CANCELLED";
+  const advanceLogs = isCancelledView
+    ? await db.auditLog.findMany({
+        where: { action: "deal.advanceDistributed", entityId: { in: deals.map((d) => d.id) } },
+        include: { user: true },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
+  const projectNameById = new Map(deals.map((d) => [d.id, d.projectName]));
+
   return (
     <div>
       <PageHeader
@@ -120,8 +133,46 @@ export default async function DealsPage({
       </form>
 
       <Card className="border border-border rounded-card ring-0 py-0 overflow-hidden">
-        <DealsTable data={deals} />
+        <DealsTable data={deals} cancelledView={isCancelledView} />
       </Card>
+
+      {isCancelledView && (
+        <div className="mt-6">
+          <h2 className="text-sm font-semibold text-text-muted uppercase tracking-label mb-2">
+            Advance distribution log
+          </h2>
+          {advanceLogs.length === 0 ? (
+            <p className="text-sm text-text-muted">No advance distribution status changes yet.</p>
+          ) : (
+            <Card className="border border-border rounded-card ring-0 py-0 overflow-hidden divide-y divide-border">
+              {advanceLogs.map((log) => {
+                const diff = log.diff as { advanceDistributed?: { old: boolean; new: boolean } } | null;
+                const from = diff?.advanceDistributed?.old ? "Yes" : "No";
+                const to = diff?.advanceDistributed?.new ? "Yes" : "No";
+                return (
+                  <div key={log.id} className="px-4 py-3 text-sm flex items-center justify-between gap-4">
+                    <p>
+                      <span className="font-medium">{log.user.name}</span> changed advance distribution for{" "}
+                      <span className="font-medium">{projectNameById.get(log.entityId) ?? "a deal"}</span> from{" "}
+                      <span className="text-text-muted">{from}</span> to{" "}
+                      <span className="font-medium">{to}</span>
+                    </p>
+                    <p className="text-text-faint whitespace-nowrap">
+                      {log.createdAt.toLocaleString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                );
+              })}
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }

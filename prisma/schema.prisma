@@ -84,6 +84,12 @@ model Deal {
   advanceReceived  Int      @default(0)
   dueMoney         Int      @default(0)
 
+  // Whether the advance already received on a cancelled deal has been paid
+  // back out (to the client, or however it's settled). Only meaningful once
+  // status = CANCELLED; tracked here (rather than inferred) so the change
+  // itself can be logged via AuditLog.
+  advanceDistributed Boolean @default(false)
+
   status           DealStatus @default(LEAD)
   version          Int      @default(1)
 
