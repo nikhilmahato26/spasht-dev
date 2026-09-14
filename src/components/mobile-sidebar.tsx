@@ -34,7 +34,7 @@ export function MobileSidebar({ children }: { children: React.ReactNode }) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-60 shrink-0 border-r border-border bg-surface px-3 py-5 transition-transform duration-200 lg:static lg:translate-x-0 lg:z-auto lg:shrink-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-60 shrink-0 border-r border-border bg-surface px-3 py-5 overflow-y-auto transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:z-auto lg:shrink-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >

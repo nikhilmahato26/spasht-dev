@@ -56,11 +56,11 @@ export function LinkInput({
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="relative flex items-center">
+    <div className="flex items-center gap-1 flex-wrap">
+      <div className="relative flex items-center min-w-0 flex-1">
         <input
           type="text"
-          placeholder="Enter domain (e.g. example.com)"
+          placeholder="Domain"
           value={link}
           onChange={(e) => setLink(e.target.value)}
           onBlur={handleSave}
@@ -69,7 +69,7 @@ export function LinkInput({
               e.currentTarget.blur();
             }
           }}
-          className="border border-border rounded-input px-2 py-1 pr-7 text-sm bg-surface w-full max-w-[200px]"
+          className="border border-border rounded-input px-2 py-1 pr-6 text-xs bg-surface w-full min-w-0"
           disabled={isPending || isRefreshing}
         />
         {hasPreview && (

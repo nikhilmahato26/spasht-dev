@@ -151,10 +151,35 @@ textarea:focus {
 }
 
 /*
+ * Night mode for the admin panel. Toggled by adding .dark to the admin
+ * layout's root element (see AdminThemeProvider) — overrides the primitive
+ * palette tokens from the @theme block above; every utility built on them
+ * (bg-bg, bg-surface, text-text, border-border, …) picks the dark value up
+ * automatically via normal CSS custom-property inheritance.
+ */
+.dark {
+  --color-bg: #101113;
+  --color-surface: #18191c;
+  --color-surface-2: #212227;
+  --color-border: #2c2d33;
+
+  --color-text: #ededea;
+  --color-text-muted: #9a9a96;
+  --color-text-faint: #63635f;
+
+  --color-accent-soft: #123330;
+  --color-cost-soft: #3a2119;
+  --color-marketing-soft: #392d15;
+  --color-dev-soft: #182440;
+  --color-company-soft: #251d34;
+  --color-pending-soft: #392712;
+}
+
+/*
  * shadcn/ui's semantic tokens, mapped onto this project's own palette above
- * instead of shadcn's default greyscale. Single light theme only (this app
- * has no dark mode toggle) — .dark mirrors :root so nothing breaks if a
- * component ever applies the class.
+ * instead of shadcn's default greyscale. .dark below re-points these at the
+ * same --color-* names, which now resolve to the dark values overridden
+ * above whenever .dark is applied.
  */
 :root {
   --background: var(--color-bg);

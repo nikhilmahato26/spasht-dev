@@ -239,6 +239,47 @@ export async function deleteDeal(formData: FormData) {
   redirect("/admin/deals");
 }
 
+// Applies every pending Advance Distributed edit from the Cancelled-deals
+// table in one go (the row selects are local-only until "Apply changes" is
+// clicked), writing one AuditLog entry per deal that actually changed.
+export async function applyAdvanceDistributedChanges(
+  changes: { dealId: string; distributed: boolean }[]
+) {
+  const user = await requireAdmin();
+  if (changes.length === 0) return;
+
+  const existingDeals = await db.deal.findMany({
+    where: { id: { in: changes.map((c) => c.dealId) } },
+    select: { id: true, advanceDistributed: true },
+  });
+  const existingById = new Map(existingDeals.map((d) => [d.id, d.advanceDistributed]));
+
+  const toApply = changes.filter(
+    (c) => existingById.has(c.dealId) && existingById.get(c.dealId) !== c.distributed
+  );
+  if (toApply.length === 0) return;
+
+  await db.$transaction(
+    toApply.map((c) =>
+      db.deal.update({ where: { id: c.dealId }, data: { advanceDistributed: c.distributed } })
+    )
+  );
+
+  await Promise.all(
+    toApply.map((c) =>
+      logAudit({
+        userId: user.id,
+        action: "deal.advanceDistributed",
+        entityType: "Deal",
+        entityId: c.dealId,
+        diff: { advanceDistributed: { old: existingById.get(c.dealId), new: c.distributed } },
+      })
+    )
+  );
+
+  revalidatePath("/admin/deals");
+}
+
 export async function addPayment(dealId: string, formData: FormData) {
   const user = await requireUser();
   const amount = rupeesToPaisa(num(formData, "amount"));

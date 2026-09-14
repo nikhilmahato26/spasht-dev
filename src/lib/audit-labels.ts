@@ -15,6 +15,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "user.update": "updated a team member",
   "user.delete": "removed a team member",
   "payout.create": "recorded a payout",
+  "deal.advanceDistributed": "changed advance distribution status",
 };
 
 export const ENTITY_LINK_PREFIX: Record<string, string> = {

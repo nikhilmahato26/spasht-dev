@@ -81,8 +81,8 @@ export function Contact() {
               
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-bold tracking-widest uppercase text-white/40">Project Budget</label>
-                <select className="bg-[#161616] border border-white/10 rounded-lg px-4 py-3 text-sm text-white/60 focus:outline-none focus:border-white/30 transition-colors appearance-none">
-                  <option value="" disabled selected>Select budget range</option>
+                <select defaultValue="" className="bg-[#161616] border border-white/10 rounded-lg px-4 py-3 text-sm text-white/60 focus:outline-none focus:border-white/30 transition-colors appearance-none">
+                  <option value="" disabled>Select budget range</option>
                   <option value="under-5k">Under ₹50,000</option>
                   <option value="5k-15k">₹50,000 - ₹1,50,000</option>
                   <option value="15k-30k">₹1,50,000 - ₹3,00,000</option>
