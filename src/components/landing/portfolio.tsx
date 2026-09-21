@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight, Lock } from "lucide-react";
+import { ArrowUpRight, Lock, Share2, Check } from "lucide-react";
 
 type DealAssignment = {
   id?: string;
@@ -219,20 +220,165 @@ function WebsiteCardPreview({ deal, index }: { deal: DealItem; index: number }) 
   );
 }
 
-export function Portfolio({ deals = [] }: PortfolioProps) {
-  const [activeTab, setActiveTab] = useState("All");
+function toSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
-  if (deals.length === 0) return null; // Don't show if no portfolio items
+function findMatchingCategory(queryValue: string, categories: string[]): string | undefined {
+  if (!queryValue) return undefined;
+  const rawQuery = queryValue.trim();
+  const lowerQuery = rawQuery.toLowerCase();
+  const slugQuery = toSlug(rawQuery);
+
+  return categories.find((cat) => {
+    if (cat === rawQuery) return true;
+    if (cat.toLowerCase() === lowerQuery) return true;
+    if (toSlug(cat) === slugQuery) return true;
+    if (toSlug(cat) === lowerQuery) return true;
+    if (cat.toLowerCase() === slugQuery) return true;
+    return false;
+  });
+}
+
+function PortfolioInner({ deals = [] }: PortfolioProps) {
+  const searchParams = useSearchParams();
 
   // Get unique categories for the tabs
   const categories = ["All", ...Array.from(new Set(deals.map(deal => deal.category?.name || "PROJECT")))] as string[];
+
+  // Determine initial active tab from search params
+  const initialCategory = searchParams.get("category") || searchParams.get("tab") || searchParams.get("filter");
+  const matchedInitialTab = initialCategory ? findMatchingCategory(initialCategory, categories) : undefined;
+
+  const [activeTab, setActiveTab] = useState<string>(() => matchedInitialTab || "All");
+  const [copied, setCopied] = useState(false);
+
+  // Sync tab if searchParams change externally (e.g. navigation / back / forward)
+  useEffect(() => {
+    const rawQuery = searchParams.get("category") || searchParams.get("tab") || searchParams.get("filter");
+    let targetQuery = rawQuery;
+
+    if (!targetQuery && typeof window !== "undefined" && window.location.hash.includes("?")) {
+      const hashParams = new URLSearchParams(window.location.hash.split("?")[1]);
+      targetQuery = hashParams.get("category") || hashParams.get("tab") || hashParams.get("filter");
+    }
+
+    if (targetQuery) {
+      const match = findMatchingCategory(targetQuery, categories);
+      if (match && match !== activeTab) {
+        setActiveTab(match);
+      }
+    }
+  }, [searchParams, categories, activeTab]);
+
+  // Scroll to portfolio if URL has a category or tab query param on load
+  useEffect(() => {
+    const rawQuery = searchParams.get("category") || searchParams.get("tab") || searchParams.get("filter");
+    let targetQuery = rawQuery;
+
+    if (!targetQuery && typeof window !== "undefined" && window.location.hash.includes("?")) {
+      const hashParams = new URLSearchParams(window.location.hash.split("?")[1]);
+      targetQuery = hashParams.get("category") || hashParams.get("tab") || hashParams.get("filter");
+    }
+
+    if (targetQuery) {
+      const match = findMatchingCategory(targetQuery, categories);
+      if (match) {
+        const scrollToPortfolio = () => {
+          const el = document.getElementById("portfolio");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        };
+
+        const raf = requestAnimationFrame(() => {
+          scrollToPortfolio();
+        });
+        const timer = setTimeout(scrollToPortfolio, 350);
+
+        return () => {
+          cancelAnimationFrame(raf);
+          clearTimeout(timer);
+        };
+      }
+    }
+  }, []); // Run once on initial mount
+
+  // Listen to browser back/forward history events
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const catParam = params.get("category") || params.get("tab") || params.get("filter");
+      if (catParam) {
+        const match = findMatchingCategory(catParam, categories);
+        if (match) {
+          setActiveTab(match);
+          return;
+        }
+      }
+      setActiveTab("All");
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [categories]);
+
+  const handleTabClick = (cat: string) => {
+    setActiveTab(cat);
+
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (cat === "All") {
+        url.searchParams.delete("category");
+        url.searchParams.delete("tab");
+        url.searchParams.delete("filter");
+      } else {
+        url.searchParams.set("category", toSlug(cat));
+        url.searchParams.delete("tab");
+        url.searchParams.delete("filter");
+      }
+      window.history.replaceState(null, "", url.toString());
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (activeTab !== "All") {
+      url.searchParams.set("category", toSlug(activeTab));
+    } else {
+      url.searchParams.delete("category");
+    }
+    url.searchParams.delete("tab");
+    url.searchParams.delete("filter");
+
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const input = document.createElement("input");
+      input.value = url.toString();
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   const filteredDeals = activeTab === "All" 
     ? deals 
     : deals.filter(deal => (deal.category?.name || "PROJECT") === activeTab);
 
   return (
-    <section id="portfolio" className="py-24 px-6 lg:px-12 bg-[#0a0a0a]">
+    <section id="portfolio" className="py-24 px-6 lg:px-12 bg-[#0a0a0a] scroll-mt-20">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <div className="inline-block border border-white/10 rounded-full px-4 py-1 mb-8">
@@ -245,21 +391,43 @@ export function Portfolio({ deals = [] }: PortfolioProps) {
             A selection of projects we&apos;ve built for founders, startups, and growing businesses.
           </p>
 
-          {/* Category Tabs */}
-          <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-8">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveTab(cat)}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
-                  activeTab === cat 
-                    ? "bg-white text-black" 
-                    : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          {/* Category Tabs & Share Link */}
+          <div className="flex items-center justify-center gap-3 mb-8 flex-wrap">
+            <div className="flex flex-wrap justify-center gap-2 md:gap-4">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => handleTabClick(cat)}
+                  className={`px-5 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${
+                    activeTab === cat 
+                      ? "bg-white text-black" 
+                      : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              title={`Copy shareable link for ${activeTab === "All" ? "all projects" : activeTab}`}
+              aria-label="Copy shareable link"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium text-white/50 bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition-all cursor-pointer"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-emerald-400 text-xs">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline text-xs">Share</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
@@ -339,3 +507,14 @@ export function Portfolio({ deals = [] }: PortfolioProps) {
     </section>
   );
 }
+
+export function Portfolio({ deals = [] }: PortfolioProps) {
+  if (deals.length === 0) return null; // Don't show if no portfolio items
+
+  return (
+    <Suspense fallback={null}>
+      <PortfolioInner deals={deals} />
+    </Suspense>
+  );
+}
+
