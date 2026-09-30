@@ -14,10 +14,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { requireUser } from "@/lib/dal";
+import { can } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { formatPaisa } from "@/lib/money";
 import { computeDealSplit, resolveAssignmentAmount } from "@/lib/deal-calc";
-import { listDealsForUser } from "@/lib/deals-data";
+import { dealScopeWhere, listDealsForUser } from "@/lib/deals-data";
 import { getUserPayoutSummary } from "@/lib/payouts-data";
 import { timeAgo } from "@/lib/time-ago";
 import { AUDIT_ACTION_LABELS } from "@/lib/audit-labels";
@@ -147,6 +148,25 @@ function SummaryCard({
   );
 }
 
+// A list row that's a link when the viewer may open the target, plain otherwise.
+function RowLink({
+  href,
+  className,
+  children,
+}: {
+  href: string | null;
+  className: string;
+  children: React.ReactNode;
+}) {
+  return href ? (
+    <Link href={href} className={`${className} hover:bg-surface-2 transition-colors`}>
+      {children}
+    </Link>
+  ) : (
+    <div className={className}>{children}</div>
+  );
+}
+
 export default async function HomePage(props: {
   searchParams?: Promise<{ month?: string; categoryId?: string; status?: string }>;
 }) {
@@ -154,7 +174,9 @@ export default async function HomePage(props: {
   const user = await requireUser();
   const firstName = user.name?.split(" ")[0] ?? user.name;
 
-  if (user.role === "ADMIN") {
+  // Admins, and members granted "Full dashboard", see the company-wide view.
+  if (can(user, "DASHBOARD_FULL")) {
+    const isAdmin = user.role === "ADMIN";
     const categories = await db.category.findMany({ orderBy: { name: "asc" } });
 
     const filterMonth = searchParams?.month;
@@ -183,6 +205,16 @@ export default async function HomePage(props: {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       return { value: monthKey(d), label: d.toLocaleDateString("en-IN", { month: "long", year: "numeric" }) };
     });
+
+    // Members with "Full dashboard" see every deal's numbers here, but can still
+    // only open the deals they're on (deal pages keep their normal scoping).
+    const openableDealIds = isAdmin
+      ? null
+      : can(user, "DEALS_VIEW")
+        ? new Set((await db.deal.findMany({ where: dealScopeWhere(user), select: { id: true } })).map((d) => d.id))
+        : new Set<string>();
+    const canOpenDeal = (id: string) => openableDealIds === null || openableDealIds.has(id);
+    const canOpenClients = can(user, "CLIENTS_MANAGE");
 
     const [deals, clients, recentAuditLogs] = await Promise.all([
       // payments is required for computeDealSplit to value CANCELLED deals at
@@ -327,12 +359,14 @@ export default async function HomePage(props: {
             </p>
           </div>
           <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
-            <Link
-              href="/admin/deals/new"
-              className="bg-text text-surface border border-text px-4 py-2.5 rounded-btn text-base font-medium hover:bg-black transition-colors self-end"
-            >
-              + New deal
-            </Link>
+            {can(user, "DEALS_MANAGE") && (
+              <Link
+                href="/admin/deals/new"
+                className="bg-text text-surface border border-text px-4 py-2.5 rounded-btn text-base font-medium hover:bg-black transition-colors self-end"
+              >
+                + New deal
+              </Link>
+            )}
             <form method="GET" className="flex flex-wrap items-center justify-end gap-2 w-full">
               <FormSelect
                 name="month"
@@ -456,23 +490,33 @@ export default async function HomePage(props: {
                   owed across the team
                 </p>
                 <div className="flex flex-col gap-2">
-                  {teamMembersOwed.map(({ member, summary }) => (
-                    <Link
-                      key={member.id}
-                      href={`/admin/team/${member.id}`}
-                      className="flex items-center justify-between text-sm hover:underline"
-                    >
-                      <span>{member.name}</span>
-                      <span className="font-mono font-medium">{formatPaisa(summary.due)}</span>
-                    </Link>
-                  ))}
+                  {teamMembersOwed.map(({ member, summary }) =>
+                    // Team pages are admin-only, so members get plain rows.
+                    isAdmin ? (
+                      <Link
+                        key={member.id}
+                        href={`/admin/team/${member.id}`}
+                        className="flex items-center justify-between text-sm hover:underline"
+                      >
+                        <span>{member.name}</span>
+                        <span className="font-mono font-medium">{formatPaisa(summary.due)}</span>
+                      </Link>
+                    ) : (
+                      <div key={member.id} className="flex items-center justify-between text-sm">
+                        <span>{member.name}</span>
+                        <span className="font-mono font-medium">{formatPaisa(summary.due)}</span>
+                      </div>
+                    )
+                  )}
                 </div>
-                <Link
-                  href="/admin/team"
-                  className="inline-block mt-3 bg-surface text-text border border-border px-3 py-1.5 rounded-btn text-sm font-medium hover:border-text-faint transition-colors"
-                >
-                  View Team
-                </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin/team"
+                    className="inline-block mt-3 bg-surface text-text border border-border px-3 py-1.5 rounded-btn text-sm font-medium hover:border-text-faint transition-colors"
+                  >
+                    View Team
+                  </Link>
+                )}
               </div>
             )}
 
@@ -494,12 +538,14 @@ export default async function HomePage(props: {
                     <p>{STATUS_LABELS[topDealWithRelations.status]}</p>
                   </div>
                 </div>
-                <Link
-                  href={`/admin/deals/${topDealWithRelations.id}`}
-                  className="inline-block bg-surface text-text border border-border px-3 py-1.5 rounded-btn text-sm font-medium hover:border-text-faint transition-colors"
-                >
-                  View Deal
-                </Link>
+                {canOpenDeal(topDealWithRelations.id) && (
+                  <Link
+                    href={`/admin/deals/${topDealWithRelations.id}`}
+                    className="inline-block bg-surface text-text border border-border px-3 py-1.5 rounded-btn text-sm font-medium hover:border-text-faint transition-colors"
+                  >
+                    View Deal
+                  </Link>
+                )}
               </div>
             )}
 
@@ -574,16 +620,18 @@ export default async function HomePage(props: {
           <div className="bg-surface border border-border rounded-card shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3.5 border-b border-border">
               <h2 className="text-lg font-semibold">Recent Deals</h2>
-              <Link href="/admin/deals" className="text-sm text-dev hover:underline">
-                View all
-              </Link>
+              {can(user, "DEALS_VIEW") && (
+                <Link href="/admin/deals" className="text-sm text-dev hover:underline">
+                  View all
+                </Link>
+              )}
             </div>
             <div className="divide-y divide-border">
               {recentDeals.map((deal) => (
-                <Link
+                <RowLink
                   key={deal.id}
-                  href={`/admin/deals/${deal.id}`}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2 transition-colors"
+                  href={canOpenDeal(deal.id) ? `/admin/deals/${deal.id}` : null}
+                  className="flex items-center gap-3 px-4 py-3"
                 >
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-semibold"
@@ -606,7 +654,7 @@ export default async function HomePage(props: {
                       {timeAgo(deal.createdAt)}
                     </span>
                   </div>
-                </Link>
+                </RowLink>
               ))}
               {recentDeals.length === 0 && (
                 <p className="text-text-muted text-sm px-4 py-6">No deals yet. Create your first one.</p>
@@ -617,16 +665,18 @@ export default async function HomePage(props: {
           <div className="bg-surface border border-border rounded-card shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3.5 border-b border-border">
               <h2 className="text-lg font-semibold">Top Clients</h2>
-              <Link href="/admin/clients" className="text-sm text-dev hover:underline">
-                View all
-              </Link>
+              {canOpenClients && (
+                <Link href="/admin/clients" className="text-sm text-dev hover:underline">
+                  View all
+                </Link>
+              )}
             </div>
             <div className="divide-y divide-border">
               {topClients.map((client) => (
-                <Link
+                <RowLink
                   key={client.id}
-                  href={`/admin/clients/${client.id}`}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2 transition-colors"
+                  href={canOpenClients ? `/admin/clients/${client.id}` : null}
+                  className="flex items-center gap-3 px-4 py-3"
                 >
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-semibold"
@@ -643,7 +693,7 @@ export default async function HomePage(props: {
                   <span className="font-mono text-base font-semibold shrink-0">
                     {formatPaisa(client.revenue)}
                   </span>
-                </Link>
+                </RowLink>
               ))}
               {topClients.length === 0 && (
                 <p className="text-text-muted text-sm px-4 py-6">No client revenue yet.</p>

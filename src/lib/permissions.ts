@@ -2,6 +2,7 @@ import type { Permission, Role } from "@/generated/prisma/client";
 
 // Column order of the Team → Permissions matrix.
 export const PERMISSIONS: { key: Permission; label: string; hint: string }[] = [
+  { key: "DASHBOARD_FULL", label: "Full dashboard", hint: "Company-wide numbers on Home" },
   { key: "DEALS_VIEW", label: "View deals", hint: "See deals they're on" },
   { key: "DEALS_MANAGE", label: "Manage deals", hint: "Create, edit, log payments" },
   { key: "CLIENTS_MANAGE", label: "Manage clients", hint: "View, add, edit clients" },

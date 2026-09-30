@@ -50,6 +50,7 @@ enum Permission {
   DEV_PROJECTS
   PAYOUTS_VIEW
   PAYOUTS_MANAGE
+  DASHBOARD_FULL
 }
 
 // ─── Business Categories ───
