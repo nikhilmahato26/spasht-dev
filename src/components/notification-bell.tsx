@@ -51,12 +51,12 @@ const COPY: Record<Status, { title: string; body: string }> = {
     body: "Allow notifications for this site in your browser settings, then reload.",
   },
   off: {
-    title: "Payout alerts are off",
-    body: "Get a notification on this device whenever a payout is recorded.",
+    title: "Alerts are off",
+    body: "Get a notification on this device for payouts and team activity.",
   },
   on: {
-    title: "Payout alerts are on",
-    body: "This device gets a notification whenever a payout is recorded.",
+    title: "Alerts are on",
+    body: "This device gets notified about payouts and team activity.",
   },
 };
 

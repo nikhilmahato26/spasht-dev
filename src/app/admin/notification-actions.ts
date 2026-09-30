@@ -37,7 +37,7 @@ export async function sendTestPush() {
   const user = await requireUser();
   await sendPushToUsers([user.id], {
     title: "Notifications are on",
-    body: "You'll get an alert here whenever a payout is recorded.",
+    body: "You'll get alerts here for payouts and team activity.",
     url: "/admin",
     tag: "test",
   });
