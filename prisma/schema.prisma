@@ -28,6 +28,7 @@ model User {
   payouts         Payout[]
   sectionPayouts  SectionPayout[]
   auditLogs       AuditLog[]
+  pushSubscriptions PushSubscription[]
 }
 
 enum Role {
@@ -219,6 +220,20 @@ model CostItem {
   amount            Int
   isRecurring       Boolean          @default(false)
   createdAt         DateTime         @default(now())
+}
+
+// ─── Browser push subscriptions (one per device/browser a user enabled) ───
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // ─── Audit Trail ───

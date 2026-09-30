@@ -1,5 +1,4 @@
 import {
-  Bell,
   Code,
   Handshake,
   Home,
@@ -17,6 +16,7 @@ import { can } from "@/lib/permissions";
 import { signOut } from "@/auth";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { MobileSidebar } from "@/components/mobile-sidebar";
+import { NotificationBell } from "@/components/notification-bell";
 import { PageContainer } from "@/components/page-container";
 import { AdminThemeProvider, NightModeToggle } from "@/components/admin-theme";
 import Image from "next/image";
@@ -109,13 +109,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <header className="h-16 border-b border-border bg-surface flex items-center justify-end px-4 lg:px-6 shrink-0 gap-3">
             <div className="lg:hidden w-9 mr-auto" aria-hidden />
             <NightModeToggle />
-            <button
-              type="button"
-              title="Notifications"
-              className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-text-muted hover:text-text hover:border-text-faint transition-colors"
-            >
-              <Bell size={16} />
-            </button>
+            <NotificationBell />
 
             <div className="flex items-center gap-2.5 pl-3 border-l border-border">
               <div className="w-8 h-8 rounded-full bg-dev text-surface flex items-center justify-center text-xs font-semibold shrink-0">

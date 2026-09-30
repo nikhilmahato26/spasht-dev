@@ -23,6 +23,8 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Spasht Finance Tracker",
   description: "Internal job-costing and team payout tool for spasht.dev",
+  icons: { apple: "/icon-192.png" },
+  appleWebApp: { capable: true, title: "Spasht", statusBarStyle: "default" },
 };
 
 export default function RootLayout({

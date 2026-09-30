@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
-import { rupeesToPaisa } from "@/lib/money";
+import { formatPaisa, rupeesToPaisa } from "@/lib/money";
+import { payoutRecipients, sendPushToUsers } from "@/lib/push";
 
 function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -39,7 +41,7 @@ export async function recordSectionPayout(formData: FormData) {
   // The deal must belong to the client whose workspace this came from
   const deal = await db.deal.findFirst({
     where: { id: dealId, ...(clientId ? { clientId } : {}) },
-    select: { id: true },
+    select: { id: true, projectName: true, client: { select: { name: true } } },
   });
   if (!deal) {
     throw new Error("Deal not found for this client");
@@ -69,6 +71,16 @@ export async function recordSectionPayout(formData: FormData) {
       method: { old: null, new: method },
       note: { old: null, new: note },
     },
+  });
+
+  after(async () => {
+    const section = team === "DEV" ? "Dev" : "Marketing";
+    await sendPushToUsers(await payoutRecipients({ actorId: admin.id, team }), {
+      title: `${section} payout: ${formatPaisa(amount)}`,
+      body: `${deal.client.name} / ${deal.projectName}, recorded by ${admin.name}`,
+      url: clientId ? `/admin/client-payouts/${clientId}` : "/admin/client-payouts?tab=payouts",
+      tag: `section-payout-${payout.id}`,
+    });
   });
 
   if (clientId) {

@@ -3,10 +3,12 @@
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { requireAdmin } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
-import { rupeesToPaisa } from "@/lib/money";
+import { formatPaisa, rupeesToPaisa } from "@/lib/money";
+import { payoutRecipients, sendPushToUsers } from "@/lib/push";
 import { capitalizeWords } from "@/lib/text";
 import type { MemberType, Permission, Role } from "@/generated/prisma/client";
 import { PERMISSION_KEYS } from "@/lib/permissions";
@@ -153,7 +155,8 @@ export async function recordPayout(userId: string, formData: FormData) {
 
   const dealId = str(formData, "dealId") || null;
 
-  await db.payout.create({
+  const payout = await db.payout.create({
+    include: { user: { select: { name: true } }, deal: { select: { projectName: true } } },
     data: {
       userId,
       dealId,
@@ -168,6 +171,20 @@ export async function recordPayout(userId: string, formData: FormData) {
     action: "payout.create",
     entityType: "User",
     entityId: userId,
+  });
+
+  after(async () => {
+    const recipients = await payoutRecipients({ actorId: admin.id, memberId: userId });
+    const base = {
+      title: `Payout to ${payout.user.name}: ${formatPaisa(amount)}`,
+      body: `${payout.deal ? `${payout.deal.projectName}, r` : "R"}ecorded by ${admin.name}`,
+      tag: `payout-${payout.id}`,
+    };
+    // The paid member lands on My Payouts; admins land on that member's page.
+    await Promise.all([
+      sendPushToUsers(recipients.filter((id) => id === userId), { ...base, url: "/admin/my-payouts" }),
+      sendPushToUsers(recipients.filter((id) => id !== userId), { ...base, url: `/admin/team/${userId}` }),
+    ]);
   });
 
   revalidatePath(`/admin/team/${userId}`);
