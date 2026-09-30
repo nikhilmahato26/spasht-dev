@@ -9,7 +9,8 @@ import { SubmitButton } from "@/components/submit-button";
 import { SummaryCard } from "@/components/summary-card";
 import { FormSelect } from "@/components/form-select";
 import { Card } from "@/components/ui/card";
-import { deleteMember, recordPayout, updateMember } from "../actions";
+import { MemberEditForm } from "./member-edit-form";
+import { deleteMember, recordPayout } from "../actions";
 
 export default async function TeamMemberPage({
   params,
@@ -38,7 +39,6 @@ export default async function TeamMemberPage({
   const isSelf = id === admin.id;
 
   const recordPayoutForUser = recordPayout.bind(null, id);
-  const updateMemberForUser = updateMember.bind(null, id);
 
   return (
     <div>
@@ -94,56 +94,8 @@ export default async function TeamMemberPage({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
         <Card className="border border-border rounded-card ring-0 p-5 gap-0">
-          <p className="text-lg font-semibold mb-4">Role &amp; status</p>
-          <form action={updateMemberForUser} className="flex flex-col gap-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs uppercase tracking-label text-text-muted font-semibold">
-                  Role
-                </label>
-                <FormSelect
-                  name="role"
-                  defaultValue={member.role}
-                  placeholder="Role"
-                  options={[
-                    { value: "MEMBER", label: "Member" },
-                    { value: "ADMIN", label: "Admin" },
-                  ]}
-                  className="w-full h-auto py-2 rounded-input"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs uppercase tracking-label text-text-muted font-semibold">
-                  Type
-                </label>
-                <FormSelect
-                  name="type"
-                  defaultValue={member.type}
-                  placeholder="Type"
-                  options={[
-                    { value: "DEV", label: "Dev" },
-                    { value: "MARKETING", label: "Marketing" },
-                  ]}
-                  className="w-full h-auto py-2 rounded-input"
-                />
-              </div>
-            </div>
-            <label className="flex items-center gap-2 text-sm text-text-muted">
-              <input
-                type="checkbox"
-                name="isActive"
-                defaultChecked={member.isActive}
-                className="w-4 h-4"
-              />
-              Active
-            </label>
-            <SubmitButton
-              pendingText="Saving..."
-              className="self-start bg-surface text-text border border-border px-4 py-2 rounded-btn text-base font-medium hover:border-text-faint transition-colors disabled:opacity-60"
-            >
-              Save
-            </SubmitButton>
-          </form>
+          <p className="text-lg font-semibold mb-4">Edit member &amp; credentials</p>
+          <MemberEditForm member={member} />
         </Card>
 
         <Card className="border border-border rounded-card ring-0 p-5 gap-0">

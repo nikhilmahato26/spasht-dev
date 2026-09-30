@@ -4,6 +4,7 @@ import Link from "next/link";
 import { DataTable } from "@/components/data-table";
 import { createColumns } from "@/lib/table-features";
 import { formatPaisa } from "@/lib/money";
+import { EditMemberDialog } from "./edit-member-dialog";
 
 export type TeamRow = {
   id: string;
@@ -61,6 +62,25 @@ const columns = col.columns([
         <span className="text-text-faint">—</span>
       );
     },
+  }),
+  col.display({
+    id: "actions",
+    header: "",
+    meta: { headerClassName: "w-20", cellClassName: "text-right" },
+    cell: ({ row }) => (
+      <div className="flex items-center justify-end">
+        <EditMemberDialog
+          member={{
+            id: row.original.id,
+            name: row.original.name,
+            email: row.original.email,
+            role: row.original.role,
+            type: row.original.type,
+            isActive: row.original.isActive,
+          }}
+        />
+      </div>
+    ),
   }),
 ]);
 

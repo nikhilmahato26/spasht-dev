@@ -47,13 +47,46 @@ export async function createMember(formData: FormData) {
 export async function updateMember(userId: string, formData: FormData) {
   const admin = await requireAdmin();
 
+  const name = capitalizeWords(str(formData, "name"));
+  const email = str(formData, "email");
+  const password = str(formData, "password");
   const role = str(formData, "role") as Role;
   const type = str(formData, "type") as MemberType;
-  const isActive = formData.get("isActive") === "on";
+  const isActive = formData.get("isActive") === "on" || formData.get("isActive") === "true";
+
+  const dataToUpdate: {
+    name?: string;
+    email?: string;
+    role?: Role;
+    type?: MemberType;
+    isActive: boolean;
+    passwordHash?: string;
+  } = {
+    role,
+    type,
+    isActive,
+  };
+
+  if (name) {
+    dataToUpdate.name = name;
+  }
+
+  if (email) {
+    const existing = await db.user.findFirst({
+      where: { email, id: { not: userId } },
+    });
+    if (!existing) {
+      dataToUpdate.email = email;
+    }
+  }
+
+  if (password && password.trim().length > 0) {
+    dataToUpdate.passwordHash = await bcrypt.hash(password.trim(), 10);
+  }
 
   await db.user.update({
     where: { id: userId },
-    data: { role, type, isActive },
+    data: dataToUpdate,
   });
 
   await logAudit({
@@ -61,6 +94,14 @@ export async function updateMember(userId: string, formData: FormData) {
     action: "user.update",
     entityType: "User",
     entityId: userId,
+    diff: {
+      name: { old: null, new: dataToUpdate.name },
+      email: { old: null, new: dataToUpdate.email },
+      role: { old: null, new: role },
+      type: { old: null, new: type },
+      isActive: { old: null, new: isActive },
+      passwordReset: { old: null, new: !!dataToUpdate.passwordHash },
+    },
   });
 
   revalidatePath("/admin/team");
