@@ -22,15 +22,31 @@ import { Badge } from "@/components/ui/badge";
 import { ClientSearchInput } from "./client-search-input";
 import { ClientPayoutsSubTabs } from "./sub-tabs";
 import { AllPayoutsTable } from "./all-payouts-table";
+import { PaginationControls } from "./pagination-controls";
 
 export default async function ClientPayoutsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; tab?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    tab?: string;
+    page?: string;
+    pageSize?: string;
+  }>;
 }) {
   await requireAdmin();
-  const { q, tab } = await searchParams;
+  const { q, tab, page: pageParam, pageSize: pageSizeParam } = await searchParams;
   const activeTab = tab === "payouts" ? "payouts" : "clients";
+
+  // Parse pagination parameters
+  const rawPage = parseInt(pageParam || "1", 10);
+  const rawPageSize = parseInt(pageSizeParam || (activeTab === "payouts" ? "20" : "15"), 10);
+  const validPageSizes = [10, 15, 20, 25, 50, 100];
+  const pageSize = validPageSizes.includes(rawPageSize)
+    ? rawPageSize
+    : activeTab === "payouts"
+    ? 20
+    : 15;
 
   // Fetch client data
   const clients = await searchClientsWithPayoutStats(activeTab === "clients" ? q : undefined);
@@ -45,6 +61,30 @@ export default async function ClientPayoutsPage({
   const totalMarketingPayouts = clients.reduce((s, c) => s + c.marketingPayouts, 0);
   const totalPayouts = totalDevPayouts + totalMarketingPayouts;
   const netRetained = clients.reduce((s, c) => s + c.netRetained, 0);
+
+  // Pagination for clients
+  const totalClientsCount = clients.length;
+  const totalClientPages = Math.max(1, Math.ceil(totalClientsCount / pageSize));
+  const currentClientPage = Math.min(
+    Math.max(1, isNaN(rawPage) ? 1 : rawPage),
+    totalClientPages
+  );
+  const paginatedClients = clients.slice(
+    (currentClientPage - 1) * pageSize,
+    currentClientPage * pageSize
+  );
+
+  // Pagination for payouts
+  const totalPayoutsCount = allPayoutsData.payouts.length;
+  const totalPayoutPages = Math.max(1, Math.ceil(totalPayoutsCount / pageSize));
+  const currentPayoutPage = Math.min(
+    Math.max(1, isNaN(rawPage) ? 1 : rawPage),
+    totalPayoutPages
+  );
+  const paginatedPayouts = allPayoutsData.payouts.slice(
+    (currentPayoutPage - 1) * pageSize,
+    currentPayoutPage * pageSize
+  );
 
   return (
     <div>
@@ -109,20 +149,23 @@ export default async function ClientPayoutsPage({
         />
         <span className="text-xs text-text-muted self-end sm:self-center font-mono">
           {activeTab === "payouts"
-            ? `Showing ${allPayoutsData.payouts.length} of ${allPayoutsData.totalCount} payouts`
-            : `Showing ${clients.length} ${clients.length === 1 ? "client" : "clients"}`}
+            ? `Showing ${paginatedPayouts.length} of ${allPayoutsData.totalCount} payouts (Page ${currentPayoutPage}/${totalPayoutPages})`
+            : `Showing ${paginatedClients.length} of ${clients.length} clients (Page ${currentClientPage}/${totalClientPages})`}
         </span>
       </div>
 
       {/* Conditional Sub-tab Content */}
       {activeTab === "payouts" ? (
         <AllPayoutsTable
-          payouts={allPayoutsData.payouts}
-          totalCount={allPayoutsData.totalCount}
+          payouts={paginatedPayouts}
+          totalCount={totalPayoutsCount}
           totalAmount={allPayoutsData.totalAmount}
           devTotal={allPayoutsData.devTotal}
           marketingTotal={allPayoutsData.marketingTotal}
           searchQuery={q}
+          currentPage={currentPayoutPage}
+          totalPages={totalPayoutPages}
+          pageSize={pageSize}
         />
       ) : (
         /* Client Payout Directory Table */
@@ -142,7 +185,7 @@ export default async function ClientPayoutsPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {clients.map((client) => (
+                {paginatedClients.map((client) => (
                   <tr
                     key={client.id}
                     className="hover:bg-bg/40 transition-colors group"
@@ -209,7 +252,7 @@ export default async function ClientPayoutsPage({
                   </tr>
                 ))}
 
-                {clients.length === 0 && (
+                {paginatedClients.length === 0 && (
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-text-muted">
                       <WalletCards size={36} className="mx-auto text-text-faint mb-3 opacity-60" />
@@ -223,6 +266,15 @@ export default async function ClientPayoutsPage({
               </tbody>
             </table>
           </div>
+
+          {/* Client Table Pagination */}
+          <PaginationControls
+            currentPage={currentClientPage}
+            totalPages={totalClientPages}
+            totalItems={totalClientsCount}
+            pageSize={pageSize}
+            itemLabel="clients"
+          />
         </Card>
       )}
     </div>

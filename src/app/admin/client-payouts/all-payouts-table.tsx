@@ -16,6 +16,7 @@ import { formatPaisa } from "@/lib/money";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { GlobalPayoutLedgerRow } from "@/lib/client-payouts-data";
+import { PaginationControls } from "./pagination-controls";
 
 function formatDate(date: Date | string) {
   const d = new Date(date);
@@ -59,6 +60,9 @@ interface AllPayoutsTableProps {
   devTotal: number;
   marketingTotal: number;
   searchQuery?: string;
+  currentPage: number;
+  totalPages: number;
+  pageSize: number;
 }
 
 export function AllPayoutsTable({
@@ -68,6 +72,9 @@ export function AllPayoutsTable({
   devTotal,
   marketingTotal,
   searchQuery,
+  currentPage,
+  totalPages,
+  pageSize,
 }: AllPayoutsTableProps) {
   return (
     <Card className="border border-border rounded-card ring-0 py-0 overflow-hidden bg-surface shadow-sm">
@@ -301,10 +308,10 @@ export function AllPayoutsTable({
       </div>
 
       {/* Table Footer Rollup */}
-      {payouts.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 py-3 bg-bg/50 border-t border-border text-xs text-text-muted">
-          <div className="flex items-center gap-2 font-mono">
-            <span>Showing {payouts.length} of {totalCount} payout entries</span>
+      {totalCount > 0 && (
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 py-2.5 bg-bg/50 border-t border-border text-xs text-text-muted">
+          <div className="flex items-center gap-2 font-mono text-2xs">
+            <span>Overall Total Disbursed ({totalCount} total entries)</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-xs font-mono">
@@ -323,6 +330,15 @@ export function AllPayoutsTable({
           </div>
         </div>
       )}
+
+      {/* Pagination Controls */}
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalCount}
+        pageSize={pageSize}
+        itemLabel="payouts"
+      />
     </Card>
   );
 }

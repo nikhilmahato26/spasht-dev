@@ -23,6 +23,7 @@ export function ClientSearchInput({
     } else {
       params.delete("q");
     }
+    params.delete("page");
 
     startTransition(() => {
       router.replace(`${pathname}?${params.toString()}`);
@@ -32,6 +33,7 @@ export function ClientSearchInput({
   const handleClear = () => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("q");
+    params.delete("page");
     startTransition(() => {
       router.replace(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`);
     });
