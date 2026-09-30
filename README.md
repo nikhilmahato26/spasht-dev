@@ -27,8 +27,8 @@ for the full implementation plan (data model, permissions, phases).
    npx prisma db seed
    ```
 
-   Seeded logins (change these passwords before using this anywhere but locally):
-   - `admin@spasht.dev` / `changeme123` (ADMIN)
+   Logins:
+   - **Admin**: Configured in `.env` via `ADMIN_EMAIL` and `ADMIN_PASSWORD` (defaults to `admin@spasht.dev`)
    - `rahul@spasht.dev` / `changeme123` (MEMBER, dev)
    - `priya@spasht.dev` / `changeme123` (MEMBER, marketing)
 

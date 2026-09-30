@@ -10,18 +10,25 @@ const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
 const db = new PrismaClient({ adapter });
 
 async function main() {
-  const adminPassword = await bcrypt.hash("changeme123", 10);
+  const adminEmail = process.env.ADMIN_EMAIL?.trim() || "admin@spasht.dev";
+  const adminPasswordRaw = process.env.ADMIN_PASSWORD?.trim() || "changeme123";
+  const adminPassword = await bcrypt.hash(adminPasswordRaw, 10);
   const memberPassword = await bcrypt.hash("changeme123", 10);
 
   const admin = await db.user.upsert({
-    where: { email: "admin@spasht.dev" },
-    update: {},
+    where: { email: adminEmail },
+    update: {
+      passwordHash: adminPassword,
+      role: "ADMIN",
+      isActive: true,
+    },
     create: {
       name: "Admin",
-      email: "admin@spasht.dev",
+      email: adminEmail,
       passwordHash: adminPassword,
       role: "ADMIN",
       type: "DEV",
+      isActive: true,
     },
   });
 
