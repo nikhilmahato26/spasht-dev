@@ -8,7 +8,7 @@ import { requireAdmin } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { formatPaisa, rupeesToPaisa } from "@/lib/money";
-import { payoutRecipients, sendPushToUsers } from "@/lib/push";
+import { currentDeviceEndpoint, payoutRecipients, sendPushToUsers } from "@/lib/push";
 import { capitalizeWords } from "@/lib/text";
 import type { MemberType, Permission, Role } from "@/generated/prisma/client";
 import { PERMISSION_KEYS } from "@/lib/permissions";
@@ -173,8 +173,9 @@ export async function recordPayout(userId: string, formData: FormData) {
     entityId: userId,
   });
 
+  const skipEndpoint = await currentDeviceEndpoint();
   after(async () => {
-    const recipients = await payoutRecipients({ actorId: admin.id, memberId: userId });
+    const recipients = await payoutRecipients({ memberId: userId });
     const base = {
       title: `Payout to ${payout.user.name}: ${formatPaisa(amount)}`,
       body: `${payout.deal ? `${payout.deal.projectName}, r` : "R"}ecorded by ${admin.name}`,
@@ -182,8 +183,8 @@ export async function recordPayout(userId: string, formData: FormData) {
     };
     // The paid member lands on My Payouts; admins land on that member's page.
     await Promise.all([
-      sendPushToUsers(recipients.filter((id) => id === userId), { ...base, url: "/admin/my-payouts" }),
-      sendPushToUsers(recipients.filter((id) => id !== userId), { ...base, url: `/admin/team/${userId}` }),
+      sendPushToUsers(recipients.filter((id) => id === userId), { ...base, url: "/admin/my-payouts" }, { skipEndpoint }),
+      sendPushToUsers(recipients.filter((id) => id !== userId), { ...base, url: `/admin/team/${userId}` }, { skipEndpoint }),
     ]);
   });
 

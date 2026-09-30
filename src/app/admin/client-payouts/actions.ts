@@ -6,7 +6,7 @@ import { requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { formatPaisa, rupeesToPaisa } from "@/lib/money";
-import { payoutRecipients, sendPushToUsers } from "@/lib/push";
+import { currentDeviceEndpoint, payoutRecipients, sendPushToUsers } from "@/lib/push";
 
 function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -73,14 +73,15 @@ export async function recordSectionPayout(formData: FormData) {
     },
   });
 
+  const skipEndpoint = await currentDeviceEndpoint();
   after(async () => {
     const section = team === "DEV" ? "Dev" : "Marketing";
-    await sendPushToUsers(await payoutRecipients({ actorId: admin.id, team }), {
+    await sendPushToUsers(await payoutRecipients({ team }), {
       title: `${section} payout: ${formatPaisa(amount)}`,
       body: `${deal.client.name} / ${deal.projectName}, recorded by ${admin.name}`,
       url: clientId ? `/admin/client-payouts/${clientId}` : "/admin/client-payouts?tab=payouts",
       tag: `section-payout-${payout.id}`,
-    });
+    }, { skipEndpoint });
   });
 
   if (clientId) {

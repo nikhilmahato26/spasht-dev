@@ -1,4 +1,5 @@
 import webpush from "web-push";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import type { MemberType } from "@/generated/prisma/client";
 
@@ -17,13 +18,31 @@ if (configured) {
   webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:admin@spasht.dev", publicKey!, privateKey!);
 }
 
-// Sends to every device the given users enabled notifications on. Never
-// throws: a failed push must not undo the payout that triggered it.
-export async function sendPushToUsers(userIds: string[], payload: PushPayload) {
+// The bell stores this browser's push endpoint in a cookie, so a server
+// action knows which device the actor is using right now.
+export const PUSH_DEVICE_COOKIE = "push_endpoint";
+
+export async function currentDeviceEndpoint() {
+  return (await cookies()).get(PUSH_DEVICE_COOKIE)?.value;
+}
+
+// Sends to every device the given users enabled notifications on, except
+// `skipEndpoint` (the device that performed the action — its user already
+// sees the result on screen, but their other devices should still ping).
+// Never throws: a failed push must not undo the action that triggered it.
+export async function sendPushToUsers(
+  userIds: string[],
+  payload: PushPayload,
+  { skipEndpoint }: { skipEndpoint?: string } = {}
+) {
   if (!configured || userIds.length === 0) return;
 
   const subscriptions = await db.pushSubscription.findMany({
-    where: { userId: { in: userIds }, user: { isActive: true } },
+    where: {
+      userId: { in: userIds },
+      user: { isActive: true },
+      ...(skipEndpoint ? { endpoint: { not: skipEndpoint } } : {}),
+    },
   });
 
   const body = JSON.stringify(payload);
@@ -53,20 +72,17 @@ export async function sendPushToUsers(userIds: string[], payload: PushPayload) {
 }
 
 // Who hears about a payout: every admin, plus either the members of the paid
-// section or the individual member paid — minus whoever recorded it.
+// section or the individual member paid.
 export async function payoutRecipients({
-  actorId,
   team,
   memberId,
 }: {
-  actorId: string;
   team?: MemberType;
   memberId?: string;
 }) {
   const users = await db.user.findMany({
     where: {
       isActive: true,
-      id: { not: actorId },
       OR: [
         { role: "ADMIN" },
         ...(team ? [{ type: team }] : []),

@@ -26,19 +26,23 @@ async function entityName(entityType: string, entityId: string): Promise<string 
   }
 }
 
-// Every audited action pings all other active admins.
-export async function notifyActivity(params: {
-  userId: string;
-  action: string;
-  entityType: string;
-  entityId: string;
-}) {
+// Every audited action pings every active admin's devices, except the one
+// the action came from.
+export async function notifyActivity(
+  params: {
+    userId: string;
+    action: string;
+    entityType: string;
+    entityId: string;
+  },
+  skipEndpoint?: string
+) {
   if (SKIP.has(params.action)) return;
 
   const [actor, admins, name] = await Promise.all([
     db.user.findUnique({ where: { id: params.userId }, select: { name: true } }),
     db.user.findMany({
-      where: { role: "ADMIN", isActive: true, id: { not: params.userId } },
+      where: { role: "ADMIN", isActive: true },
       select: { id: true },
     }),
     entityName(params.entityType, params.entityId),
@@ -56,6 +60,7 @@ export async function notifyActivity(params: {
       body: name ?? (deleted ? "Removed. See the activity log for details." : "Tap to view"),
       url: prefix && !deleted && name ? `/admin${prefix}/${params.entityId}` : "/admin/audit",
       tag: `activity-${params.action}-${params.entityId}`,
-    }
+    },
+    { skipEndpoint }
   );
 }

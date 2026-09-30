@@ -2,6 +2,7 @@ import { after } from "next/server";
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { notifyActivity } from "@/lib/activity-notify";
+import { currentDeviceEndpoint } from "@/lib/push";
 
 export async function logAudit(params: {
   userId: string;
@@ -21,5 +22,6 @@ export async function logAudit(params: {
   });
 
   // Push to admins once the response is sent, so it never slows the action down.
-  after(() => notifyActivity(params).catch((err) => console.error("[push] activity", err)));
+  const skipEndpoint = await currentDeviceEndpoint();
+  after(() => notifyActivity(params, skipEndpoint).catch((err) => console.error("[push] activity", err)));
 }

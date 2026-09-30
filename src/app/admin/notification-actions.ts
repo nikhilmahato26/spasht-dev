@@ -2,7 +2,8 @@
 
 import { requireUser } from "@/lib/dal";
 import { db } from "@/lib/db";
-import { sendPushToUsers } from "@/lib/push";
+import { cookies } from "next/headers";
+import { PUSH_DEVICE_COOKIE, sendPushToUsers } from "@/lib/push";
 
 type SerializedSubscription = {
   endpoint: string;
@@ -26,11 +27,20 @@ export async function savePushSubscription(sub: SerializedSubscription) {
     create: { endpoint, p256dh, auth, userId: user.id },
     update: { p256dh, auth, userId: user.id },
   });
+
+  (await cookies()).set(PUSH_DEVICE_COOKIE, endpoint, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  });
 }
 
 export async function removePushSubscription(endpoint: string) {
   const user = await requireUser();
   await db.pushSubscription.deleteMany({ where: { endpoint, userId: user.id } });
+  (await cookies()).delete(PUSH_DEVICE_COOKIE);
 }
 
 export async function sendTestPush() {
