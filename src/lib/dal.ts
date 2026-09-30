@@ -2,6 +2,8 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { can } from "@/lib/permissions";
+import type { Permission } from "@/generated/prisma/client";
 
 export const getSession = cache(async () => auth());
 
@@ -21,11 +23,18 @@ export const requireUser = cache(async () => {
     email: dbUser.email,
     role: dbUser.role,
     type: dbUser.type,
+    permissions: dbUser.permissions,
   };
 });
 
 export async function requireAdmin() {
   const user = await requireUser();
   if (user.role !== "ADMIN") redirect("/admin");
+  return user;
+}
+
+export async function requirePermission(permission: Permission) {
+  const user = await requireUser();
+  if (!can(user, permission)) redirect("/admin");
   return user;
 }

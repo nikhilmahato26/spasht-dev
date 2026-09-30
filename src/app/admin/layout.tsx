@@ -13,6 +13,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { requireUser } from "@/lib/dal";
+import { can } from "@/lib/permissions";
 import { signOut } from "@/auth";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { MobileSidebar } from "@/components/mobile-sidebar";
@@ -39,14 +40,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
       label: "Operations",
       items: [
         { href: "/admin", label: "Home", icon: <Home {...iconProps} /> },
-        { href: "/admin/deals", label: "Deals", icon: <Handshake {...iconProps} /> },
-        { href: "/admin/clients", label: "Clients", icon: <Users {...iconProps} /> },
+        ...(can(user, "DEALS_VIEW")
+          ? [{ href: "/admin/deals", label: "Deals", icon: <Handshake {...iconProps} /> }]
+          : []),
+        ...(can(user, "CLIENTS_MANAGE")
+          ? [{ href: "/admin/clients", label: "Clients", icon: <Users {...iconProps} /> }]
+          : []),
         ...(user.role === "ADMIN"
           ? [{ href: "/admin/client-payouts", label: "Client Payouts", icon: <WalletCards {...iconProps} /> }]
           : []),
-        { href: "/admin/expenses", label: "Expenses", icon: <Receipt {...iconProps} /> },
-        { href: "/admin/categories", label: "Categories", icon: <Tag {...iconProps} /> },
-        ...(user.role === "ADMIN" || user.type === "DEV"
+        ...(can(user, "EXPENSES_VIEW")
+          ? [{ href: "/admin/expenses", label: "Expenses", icon: <Receipt {...iconProps} /> }]
+          : []),
+        ...(can(user, "CATEGORIES_MANAGE")
+          ? [{ href: "/admin/categories", label: "Categories", icon: <Tag {...iconProps} /> }]
+          : []),
+        ...(can(user, "DEV_PROJECTS")
           ? [{ href: "/admin/dev-projects", label: "Dev Projects", icon: <Code {...iconProps} /> }]
           : []),
         ...(user.role === "ADMIN"

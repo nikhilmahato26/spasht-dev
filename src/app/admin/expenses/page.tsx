@@ -1,5 +1,5 @@
 import { Receipt, Code2, Megaphone } from "lucide-react";
-import { requireUser } from "@/lib/dal";
+import { requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { formatPaisa } from "@/lib/money";
 import { dealScopeWhere } from "@/lib/deals-data";
@@ -28,7 +28,7 @@ export default async function ExpensesPage({
 }: {
   searchParams: Promise<{ month?: string; team?: string; expenseCategoryId?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requirePermission("EXPENSES_VIEW");
   const { month, team, expenseCategoryId } = await searchParams;
   const isAdmin = user.role === "ADMIN";
   const teamFilter: MemberType | undefined = team === "DEV" || team === "MARKETING" ? team : undefined;

@@ -8,7 +8,9 @@ import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { rupeesToPaisa } from "@/lib/money";
 import { capitalizeWords } from "@/lib/text";
-import type { MemberType, Role } from "@/generated/prisma/client";
+import type { MemberType, Permission, Role } from "@/generated/prisma/client";
+import { PERMISSION_KEYS } from "@/lib/permissions";
+import { memberHasHistory } from "@/lib/team-data";
 
 function str(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -31,7 +33,17 @@ export async function createMember(formData: FormData) {
   const passwordHash = await bcrypt.hash(password, 10);
 
   const member = await db.user.create({
-    data: { name, email, passwordHash, role, type },
+    data: {
+      name,
+      email,
+      passwordHash,
+      role,
+      type,
+      // Schema default covers everything else; Dev Projects stays opt-in for Marketing.
+      ...(type === "DEV"
+        ? { permissions: ["DEALS_VIEW", "DEALS_MANAGE", "CLIENTS_MANAGE", "CATEGORIES_MANAGE", "EXPENSES_VIEW", "DEV_PROJECTS"] satisfies Permission[] }
+        : {}),
+    },
   });
 
   await logAudit({
@@ -117,14 +129,7 @@ export async function deleteMember(formData: FormData) {
     redirect(`/admin/team/${userId}?error=self`);
   }
 
-  const [assignmentCount, dealCount, payoutCount, auditCount] = await Promise.all([
-    db.dealAssignment.count({ where: { userId } }),
-    db.deal.count({ where: { OR: [{ createdById: userId }, { closedById: userId }] } }),
-    db.payout.count({ where: { userId } }),
-    db.auditLog.count({ where: { userId } }),
-  ]);
-
-  if (assignmentCount > 0 || dealCount > 0 || payoutCount > 0 || auditCount > 0) {
+  if (await memberHasHistory(userId)) {
     redirect(`/admin/team/${userId}?error=has-history`);
   }
 
@@ -171,3 +176,67 @@ export async function recordPayout(userId: string, formData: FormData) {
   revalidatePath("/admin/client-payouts");
 }
 
+
+export type RemoveMemberResult = { ok: true } | { ok: false; error: string };
+
+// Used by the team table's delete dialog. Unlike deleteMember it reports
+// failures back to the dialog instead of redirecting.
+export async function removeMember(userId: string): Promise<RemoveMemberResult> {
+  const admin = await requireAdmin();
+
+  if (userId === admin.id) return { ok: false, error: "You can't delete your own account." };
+  if (await memberHasHistory(userId)) {
+    return { ok: false, error: "This member has deal or payout history. Deactivate them instead." };
+  }
+
+  await db.user.delete({ where: { id: userId } });
+  await logAudit({ userId: admin.id, action: "user.delete", entityType: "User", entityId: userId });
+
+  revalidatePath("/admin/team");
+  return { ok: true };
+}
+
+export async function deactivateMember(userId: string): Promise<RemoveMemberResult> {
+  const admin = await requireAdmin();
+  if (userId === admin.id) return { ok: false, error: "You can't deactivate your own account." };
+
+  await db.user.update({ where: { id: userId }, data: { isActive: false } });
+  await logAudit({
+    userId: admin.id,
+    action: "user.update",
+    entityType: "User",
+    entityId: userId,
+    diff: { isActive: { old: true, new: false } },
+  });
+
+  revalidatePath("/admin/team");
+  revalidatePath(`/admin/team/${userId}`);
+  return { ok: true };
+}
+
+export async function setMemberPermission(userId: string, permission: Permission, enabled: boolean) {
+  const admin = await requireAdmin();
+  if (!PERMISSION_KEYS.includes(permission)) throw new Error("Unknown permission");
+
+  const member = await db.user.findUnique({
+    where: { id: userId },
+    select: { role: true, permissions: true },
+  });
+  if (!member) throw new Error("Member not found");
+  if (member.role === "ADMIN") throw new Error("Admins always have every permission");
+
+  const next = enabled
+    ? Array.from(new Set([...member.permissions, permission]))
+    : member.permissions.filter((p) => p !== permission);
+
+  await db.user.update({ where: { id: userId }, data: { permissions: { set: next } } });
+  await logAudit({
+    userId: admin.id,
+    action: "user.permission",
+    entityType: "User",
+    entityId: userId,
+    diff: { [permission]: { old: !enabled, new: enabled } },
+  });
+
+  revalidatePath("/admin/team");
+}

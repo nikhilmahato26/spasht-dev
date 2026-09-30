@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Users } from "lucide-react";
-import { requireUser } from "@/lib/dal";
+import { requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { FormSelect } from "@/components/form-select";
 import { Card } from "@/components/ui/card";
@@ -13,7 +13,7 @@ export default async function ClientsPage({
 }: {
   searchParams: Promise<{ category?: string }>;
 }) {
-  await requireUser();
+  await requirePermission("CLIENTS_MANAGE");
   const { category } = await searchParams;
 
   const [clients, categoryRows] = await Promise.all([

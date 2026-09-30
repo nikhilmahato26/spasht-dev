@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUser } from "@/lib/dal";
+import { requireUser, requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { rupeesToPaisa } from "@/lib/money";
@@ -57,7 +57,7 @@ export async function createExpense(formData: FormData) {
 }
 
 export async function updateExpense(id: string, formData: FormData) {
-  const user = await requireUser();
+  const user = await requirePermission("EXPENSES_VIEW");
 
   const existing = await db.costItem.findUnique({ where: { id } });
   if (!existing) return;
@@ -97,7 +97,7 @@ export async function updateExpense(id: string, formData: FormData) {
 }
 
 export async function deleteExpense(formData: FormData) {
-  const user = await requireUser();
+  const user = await requirePermission("EXPENSES_VIEW");
   const id = str(formData, "id");
   if (!id) return;
 

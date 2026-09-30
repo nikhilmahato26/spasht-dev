@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { Users } from "lucide-react";
-import { requireUser } from "@/lib/dal";
+import { requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { ClientForm } from "@/components/client-form";
 import { PageHeader } from "@/components/page-header";
@@ -11,7 +11,7 @@ export default async function EditClientPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireUser();
+  await requirePermission("CLIENTS_MANAGE");
   const { id } = await params;
 
   const client = await db.client.findUnique({ where: { id } });

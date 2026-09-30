@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireUser, requireAdmin } from "@/lib/dal";
+import { requireAdmin, requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { capitalizeWords } from "@/lib/text";
@@ -19,7 +19,7 @@ function readClientFields(formData: FormData) {
 }
 
 export async function createClient(formData: FormData) {
-  const user = await requireUser();
+  const user = await requirePermission("CLIENTS_MANAGE");
   const fields = readClientFields(formData);
   if (!fields.name) return;
 
@@ -34,7 +34,7 @@ export async function createClient(formData: FormData) {
 }
 
 export async function updateClient(id: string, formData: FormData) {
-  const user = await requireUser();
+  const user = await requirePermission("CLIENTS_MANAGE");
   const fields = readClientFields(formData);
   if (!fields.name) return;
 

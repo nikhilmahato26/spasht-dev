@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Handshake } from "lucide-react";
-import { requireUser } from "@/lib/dal";
+import { requirePermission } from "@/lib/dal";
+import { can } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { dealScopeWhere } from "@/lib/deals-data";
 import { STATUS_LABELS } from "@/lib/deal-status";
@@ -16,7 +17,7 @@ export default async function DealsPage({
 }: {
   searchParams: Promise<{ status?: string; categoryId?: string; clientId?: string; sort?: string; q?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requirePermission("DEALS_VIEW");
   const params = await searchParams;
 
   const [categories, clients] = await Promise.all([
@@ -72,9 +73,11 @@ export default async function DealsPage({
         color="#39568f"
         title="Deals"
         action={
-          <Button asChild className="h-auto bg-text text-surface px-4 py-2.5 rounded-btn text-base font-medium hover:bg-black">
-            <Link href="/admin/deals/new">+ New deal</Link>
-          </Button>
+          can(user, "DEALS_MANAGE") ? (
+            <Button asChild className="h-auto bg-text text-surface px-4 py-2.5 rounded-btn text-base font-medium hover:bg-black">
+              <Link href="/admin/deals/new">+ New deal</Link>
+            </Button>
+          ) : undefined
         }
       />
 

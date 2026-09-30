@@ -17,6 +17,8 @@ model User {
   role         Role     @default(MEMBER)
   type         MemberType @default(DEV)
   isActive     Boolean  @default(true)
+  // Only consulted for MEMBERs — admins implicitly hold every permission.
+  permissions  Permission[] @default([DEALS_VIEW, DEALS_MANAGE, CLIENTS_MANAGE, CATEGORIES_MANAGE, EXPENSES_VIEW])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -36,6 +38,15 @@ enum Role {
 enum MemberType {
   DEV
   MARKETING
+}
+
+enum Permission {
+  DEALS_VIEW
+  DEALS_MANAGE
+  CLIENTS_MANAGE
+  CATEGORIES_MANAGE
+  EXPENSES_VIEW
+  DEV_PROJECTS
 }
 
 // ─── Business Categories ───

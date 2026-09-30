@@ -1,5 +1,5 @@
 import { Handshake } from "lucide-react";
-import { requireUser } from "@/lib/dal";
+import { requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { DealMoneyForm } from "@/components/deal-money-form";
 import { SubmitButton } from "@/components/submit-button";
@@ -9,7 +9,7 @@ import { createDeal } from "../actions";
 import { DealNameSection } from "./deal-name-section";
 
 export default async function NewDealPage() {
-  await requireUser();
+  await requirePermission("DEALS_MANAGE");
 
   const [clients, categories, users] = await Promise.all([
     db.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),

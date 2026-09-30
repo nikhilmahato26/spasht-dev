@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { Handshake } from "lucide-react";
-import { requireUser } from "@/lib/dal";
+import { requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { getDealForUser } from "@/lib/deals-data";
 import { paisaToRupees } from "@/lib/money";
@@ -15,7 +15,7 @@ export default async function EditDealPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requirePermission("DEALS_MANAGE");
   const { id } = await params;
 
   const deal = await getDealForUser(id, user);

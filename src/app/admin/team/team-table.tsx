@@ -5,6 +5,8 @@ import { DataTable } from "@/components/data-table";
 import { createColumns } from "@/lib/table-features";
 import { formatPaisa } from "@/lib/money";
 import { EditMemberDialog } from "./edit-member-dialog";
+import { DeleteMemberDialog } from "./delete-member-dialog";
+import type { Permission } from "@/generated/prisma/client";
 
 export type TeamRow = {
   id: string;
@@ -16,6 +18,9 @@ export type TeamRow = {
   entitled: number;
   paid: number;
   due: number;
+  permissions: Permission[];
+  hasHistory: boolean;
+  isSelf: boolean;
 };
 
 const col = createColumns<TeamRow>();
@@ -66,9 +71,9 @@ const columns = col.columns([
   col.display({
     id: "actions",
     header: "",
-    meta: { headerClassName: "w-20", cellClassName: "text-right" },
+    meta: { headerClassName: "w-28", cellClassName: "text-right" },
     cell: ({ row }) => (
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-1.5">
         <EditMemberDialog
           member={{
             id: row.original.id,
@@ -78,6 +83,11 @@ const columns = col.columns([
             type: row.original.type,
             isActive: row.original.isActive,
           }}
+        />
+        <DeleteMemberDialog
+          member={{ id: row.original.id, name: row.original.name, isActive: row.original.isActive }}
+          hasHistory={row.original.hasHistory}
+          isSelf={row.original.isSelf}
         />
       </div>
     ),

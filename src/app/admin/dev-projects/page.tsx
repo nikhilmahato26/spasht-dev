@@ -1,6 +1,5 @@
-import { requireUser } from "@/lib/dal";
+import { requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
-import { redirect } from "next/navigation";
 import { LinkInput } from "./link-input";
 import Link from "next/link";
 import { formatPaisa } from "@/lib/money";
@@ -78,10 +77,7 @@ export default async function DevProjectsPage(props: {
   searchParams?: Promise<{ categoryId?: string; devId?: string; q?: string; month?: string }>;
 }) {
   const searchParams = await props.searchParams;
-  const user = await requireUser();
-  if (user.role !== "ADMIN" && user.type !== "DEV") {
-    redirect("/admin");
-  }
+  const user = await requirePermission("DEV_PROJECTS");
 
   const params = searchParams ?? {};
 

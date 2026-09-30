@@ -2,12 +2,13 @@
 
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/dal";
+import { can } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { uploadWebsitePreview, deleteWebsitePreview } from "@/lib/cloudinary";
 
 export async function updateDealLink(dealId: string, link: string) {
   const user = await requireUser();
-  if (user.role !== "ADMIN" && user.type !== "DEV") {
+  if (!can(user, "DEV_PROJECTS")) {
     throw new Error("Unauthorized");
   }
 
@@ -52,7 +53,7 @@ export async function updateDealLink(dealId: string, link: string) {
 
 export async function refreshDealPreview(dealId: string) {
   const user = await requireUser();
-  if (user.role !== "ADMIN" && user.type !== "DEV") {
+  if (!can(user, "DEV_PROJECTS")) {
     throw new Error("Unauthorized");
   }
 

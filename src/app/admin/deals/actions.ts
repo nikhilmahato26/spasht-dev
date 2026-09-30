@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireUser, requireAdmin } from "@/lib/dal";
+import { requireAdmin, requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { rupeesToPaisa } from "@/lib/money";
@@ -70,7 +70,7 @@ async function assignmentsWithinPoolLimits(
 }
 
 export async function createDeal(formData: FormData) {
-  const user = await requireUser();
+  const user = await requirePermission("DEALS_MANAGE");
 
   const projectName = capitalizeWords(str(formData, "projectName"));
   const link = str(formData, "link") || null;
@@ -156,7 +156,7 @@ export async function createDeal(formData: FormData) {
 }
 
 export async function updateDeal(dealId: string, formData: FormData) {
-  const user = await requireUser();
+  const user = await requirePermission("DEALS_MANAGE");
 
   const existing = await getDealForUser(dealId, user);
   if (!existing) return;
@@ -281,7 +281,7 @@ export async function applyAdvanceDistributedChanges(
 }
 
 export async function addPayment(dealId: string, formData: FormData) {
-  const user = await requireUser();
+  const user = await requirePermission("DEALS_MANAGE");
   const amount = rupeesToPaisa(num(formData, "amount"));
   if (!amount) return;
 
@@ -308,7 +308,7 @@ export async function addPayment(dealId: string, formData: FormData) {
 }
 
 export async function addCostItem(dealId: string, formData: FormData) {
-  const user = await requireUser();
+  const user = await requirePermission("DEALS_MANAGE");
   const label = capitalizeWords(str(formData, "label"));
   const amount = rupeesToPaisa(num(formData, "amount"));
   if (!label || !amount) return;

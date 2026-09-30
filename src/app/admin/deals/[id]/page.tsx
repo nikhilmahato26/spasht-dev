@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/dal";
+import { requirePermission } from "@/lib/dal";
 import { getDealForUser } from "@/lib/deals-data";
 import { computeDealSplit, resolveAssignmentAmount } from "@/lib/deal-calc";
 import { formatPaisa } from "@/lib/money";
@@ -9,19 +9,21 @@ import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { STATUS_LABELS } from "@/lib/deal-status";
 import { addPayment, addCostItem, deleteDeal } from "../actions";
+import { can } from "@/lib/permissions";
 
 export default async function DealDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requirePermission("DEALS_VIEW");
   const { id } = await params;
 
   const deal = await getDealForUser(id, user);
   if (!deal) notFound();
 
   const split = computeDealSplit(deal);
+  const canManage = can(user, "DEALS_MANAGE");
   const addPaymentForDeal = addPayment.bind(null, deal.id);
   const addCostItemForDeal = addCostItem.bind(null, deal.id);
 
@@ -65,12 +67,14 @@ export default async function DealDetailPage({
           <span className="font-mono text-2xl font-semibold tracking-tighter">
             {formatPaisa(deal.totalPrice)}
           </span>
-          <Link
-            href={`/admin/deals/${deal.id}/edit`}
-            className="bg-surface text-text border border-border px-3 py-2 rounded-btn text-sm font-medium hover:border-text-faint transition-colors"
-          >
-            Edit
-          </Link>
+          {canManage && (
+            <Link
+              href={`/admin/deals/${deal.id}/edit`}
+              className="bg-surface text-text border border-border px-3 py-2 rounded-btn text-sm font-medium hover:border-text-faint transition-colors"
+            >
+              Edit
+            </Link>
+          )}
           {user.role === "ADMIN" && (
             <form action={deleteDeal}>
               <input type="hidden" name="id" value={deal.id} />
@@ -153,31 +157,33 @@ export default async function DealDetailPage({
               <p className="text-text-muted text-sm px-4 py-4">No cost items yet.</p>
             )}
           </div>
-          <form action={addCostItemForDeal} className="flex gap-2 items-center flex-wrap">
-            <input
-              name="label"
-              placeholder="Label (e.g. Domain)"
-              required
-              className="border border-border rounded-input px-3 py-1.5 text-sm bg-surface flex-1 min-w-[120px]"
-            />
-            <input
-              type="number"
-              name="amount"
-              placeholder="₹"
-              min="0"
-              required
-              className="border border-border rounded-input px-3 py-1.5 text-sm bg-surface font-mono w-24"
-            />
-            <label className="flex items-center gap-1 text-sm text-text-muted">
-              <input type="checkbox" name="isRecurring" className="w-3.5 h-3.5" /> recurring
-            </label>
-            <SubmitButton
-              pendingText="Adding..."
-              className="bg-surface text-text border border-border px-3 py-1.5 rounded-btn text-sm font-medium hover:border-text-faint transition-colors disabled:opacity-60"
-            >
-              Add
-            </SubmitButton>
-          </form>
+          {canManage && (
+            <form action={addCostItemForDeal} className="flex gap-2 items-center flex-wrap">
+              <input
+                name="label"
+                placeholder="Label (e.g. Domain)"
+                required
+                className="border border-border rounded-input px-3 py-1.5 text-sm bg-surface flex-1 min-w-[120px]"
+              />
+              <input
+                type="number"
+                name="amount"
+                placeholder="₹"
+                min="0"
+                required
+                className="border border-border rounded-input px-3 py-1.5 text-sm bg-surface font-mono w-24"
+              />
+              <label className="flex items-center gap-1 text-sm text-text-muted">
+                <input type="checkbox" name="isRecurring" className="w-3.5 h-3.5" /> recurring
+              </label>
+              <SubmitButton
+                pendingText="Adding..."
+                className="bg-surface text-text border border-border px-3 py-1.5 rounded-btn text-sm font-medium hover:border-text-faint transition-colors disabled:opacity-60"
+              >
+                Add
+              </SubmitButton>
+            </form>
+          )}
         </div>
       </div>
 
@@ -202,32 +208,34 @@ export default async function DealDetailPage({
             <p className="text-text-muted text-sm px-4 py-4">No payments recorded yet.</p>
           )}
         </div>
-        <form action={addPaymentForDeal} className="flex gap-2 items-center flex-wrap">
-          <input
-            type="number"
-            name="amount"
-            placeholder="₹ amount"
-            min="0"
-            required
-            className="border border-border rounded-input px-3 py-1.5 text-sm bg-surface font-mono w-32"
-          />
-          <input
-            name="method"
-            placeholder="Method (UPI, bank...)"
-            className="border border-border rounded-input px-3 py-1.5 text-sm bg-surface w-40"
-          />
-          <input
-            name="note"
-            placeholder="Note (optional)"
-            className="border border-border rounded-input px-3 py-1.5 text-sm bg-surface flex-1 min-w-[120px]"
-          />
-          <SubmitButton
-            pendingText="Recording..."
-            className="bg-surface text-text border border-border px-3 py-1.5 rounded-btn text-sm font-medium hover:border-text-faint transition-colors disabled:opacity-60"
-          >
-            Record payment
-          </SubmitButton>
-        </form>
+        {canManage && (
+          <form action={addPaymentForDeal} className="flex gap-2 items-center flex-wrap">
+            <input
+              type="number"
+              name="amount"
+              placeholder="₹ amount"
+              min="0"
+              required
+              className="border border-border rounded-input px-3 py-1.5 text-sm bg-surface font-mono w-32"
+            />
+            <input
+              name="method"
+              placeholder="Method (UPI, bank...)"
+              className="border border-border rounded-input px-3 py-1.5 text-sm bg-surface w-40"
+            />
+            <input
+              name="note"
+              placeholder="Note (optional)"
+              className="border border-border rounded-input px-3 py-1.5 text-sm bg-surface flex-1 min-w-[120px]"
+            />
+            <SubmitButton
+              pendingText="Recording..."
+              className="bg-surface text-text border border-border px-3 py-1.5 rounded-btn text-sm font-medium hover:border-text-faint transition-colors disabled:opacity-60"
+            >
+              Record payment
+            </SubmitButton>
+          </form>
+        )}
       </div>
     </div>
   );

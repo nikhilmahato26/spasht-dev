@@ -1,5 +1,5 @@
 import { Tag } from "lucide-react";
-import { requireUser } from "@/lib/dal";
+import { requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { SubmitButton } from "@/components/submit-button";
 import { Card } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { createCategory, deleteCategory } from "./actions";
 import { EditCategoryDialog } from "./edit-category-dialog";
 
 export default async function CategoriesPage() {
-  await requireUser();
+  await requirePermission("CATEGORIES_MANAGE");
   const categories = await db.category.findMany({
     orderBy: { name: "asc" },
     include: { _count: { select: { deals: true } } },

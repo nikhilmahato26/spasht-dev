@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Handshake, IndianRupee, Clock } from "lucide-react";
-import { requireUser } from "@/lib/dal";
+import { requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { formatPaisa } from "@/lib/money";
 import { SubmitButton } from "@/components/submit-button";
@@ -25,7 +25,7 @@ export default async function ClientDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requirePermission("CLIENTS_MANAGE");
   const { id } = await params;
   const { error } = await searchParams;
 

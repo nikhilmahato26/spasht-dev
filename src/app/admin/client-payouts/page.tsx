@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   WalletCards,
   ArrowRight,
-  TrendingUp,
   Code,
   Megaphone,
   IndianRupee,
@@ -60,7 +59,6 @@ export default async function ClientPayoutsPage({
   const totalDevPayouts = clients.reduce((s, c) => s + c.devPayouts, 0);
   const totalMarketingPayouts = clients.reduce((s, c) => s + c.marketingPayouts, 0);
   const totalPayouts = totalDevPayouts + totalMarketingPayouts;
-  const netRetained = clients.reduce((s, c) => s + c.netRetained, 0);
 
   // Pagination for clients
   const totalClientsCount = clients.length;
@@ -95,7 +93,7 @@ export default async function ClientPayoutsPage({
       />
 
       {/* Aggregate Overview Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <SummaryCard
           label="Total Inflow"
           value={formatPaisa(totalInflow)}
@@ -119,12 +117,6 @@ export default async function ClientPayoutsPage({
           value={formatPaisa(totalPayouts)}
           color="#5B398F"
           icon={Layers}
-        />
-        <SummaryCard
-          label="Net Margin"
-          value={formatPaisa(netRetained)}
-          color="#2e7d32"
-          icon={TrendingUp}
         />
       </div>
 
@@ -180,7 +172,6 @@ export default async function ClientPayoutsPage({
                   <th className="py-3 px-4 font-semibold text-right text-dev">Dev Payouts</th>
                   <th className="py-3 px-4 font-semibold text-right text-marketing">Marketing Payouts</th>
                   <th className="py-3 px-4 font-semibold text-right">Total Payouts</th>
-                  <th className="py-3 px-4 font-semibold text-right">Net Margin</th>
                   <th className="py-3 px-4 text-center">Action</th>
                 </tr>
               </thead>
@@ -236,10 +227,6 @@ export default async function ClientPayoutsPage({
                       {formatPaisa(client.totalPayouts)}
                     </td>
 
-                    <td className="py-3.5 px-4 text-right font-mono text-sm font-semibold text-emerald-500">
-                      {formatPaisa(client.netRetained)}
-                    </td>
-
                     <td className="py-3.5 px-4 text-center">
                       <Link
                         href={`/admin/client-payouts/${client.id}`}
@@ -254,7 +241,7 @@ export default async function ClientPayoutsPage({
 
                 {paginatedClients.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-text-muted">
+                    <td colSpan={7} className="py-12 text-center text-text-muted">
                       <WalletCards size={36} className="mx-auto text-text-faint mb-3 opacity-60" />
                       <p className="font-medium text-text">No clients found</p>
                       <p className="text-xs text-text-faint mt-1">

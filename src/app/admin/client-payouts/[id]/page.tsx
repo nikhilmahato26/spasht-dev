@@ -5,7 +5,6 @@ import {
   IndianRupee,
   Code,
   Megaphone,
-  TrendingUp,
   Receipt,
   Layers,
   Send,
@@ -79,7 +78,7 @@ export default async function ClientPayoutWorkspacePage({
       </div>
 
       {/* Top Financial Health Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <SummaryCard
           label="Total Inflow"
           value={formatPaisa(totals.totalInflow)}
@@ -103,12 +102,6 @@ export default async function ClientPayoutWorkspacePage({
           value={formatPaisa(totals.totalCosts)}
           color="#c2410c"
           icon={Receipt}
-        />
-        <SummaryCard
-          label="Net Retained"
-          value={formatPaisa(totals.netClientMargin)}
-          color="#2e7d32"
-          icon={TrendingUp}
         />
       </div>
 
