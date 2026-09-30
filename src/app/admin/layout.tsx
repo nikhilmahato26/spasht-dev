@@ -10,6 +10,7 @@ import {
   Users,
   UsersRound,
   Wallet,
+  WalletCards,
 } from "lucide-react";
 import { requireUser } from "@/lib/dal";
 import { signOut } from "@/auth";
@@ -40,6 +41,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         { href: "/admin", label: "Home", icon: <Home {...iconProps} /> },
         { href: "/admin/deals", label: "Deals", icon: <Handshake {...iconProps} /> },
         { href: "/admin/clients", label: "Clients", icon: <Users {...iconProps} /> },
+        ...(user.role === "ADMIN"
+          ? [{ href: "/admin/client-payouts", label: "Client Payouts", icon: <WalletCards {...iconProps} /> }]
+          : []),
         { href: "/admin/expenses", label: "Expenses", icon: <Receipt {...iconProps} /> },
         { href: "/admin/categories", label: "Categories", icon: <Tag {...iconProps} /> },
         ...(user.role === "ADMIN" || user.type === "DEV"
