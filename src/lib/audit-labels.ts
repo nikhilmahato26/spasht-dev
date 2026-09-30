@@ -18,6 +18,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "user.delete": "removed a team member",
   "payout.create": "recorded a payout",
   "sectionPayout.create": "recorded a section payout",
+  "sectionPayout.delete": "deleted a section payout",
   "user.permission": "changed a member's permissions",
   "deal.advanceDistributed": "changed advance distribution status",
 };
