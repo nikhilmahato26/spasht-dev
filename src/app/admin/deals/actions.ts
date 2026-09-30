@@ -304,6 +304,7 @@ export async function addPayment(dealId: string, formData: FormData) {
   });
 
   revalidatePath(`/admin/deals/${dealId}`);
+  revalidatePath("/admin/client-payouts");
 }
 
 export async function addCostItem(dealId: string, formData: FormData) {

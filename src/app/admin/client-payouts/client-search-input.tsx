@@ -4,7 +4,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { Search, X } from "lucide-react";
 
-export function ClientSearchInput({ defaultValue = "" }: { defaultValue?: string }) {
+export function ClientSearchInput({
+  defaultValue = "",
+  placeholder = "Search clients by name, company, email or phone...",
+}: {
+  defaultValue?: string;
+  placeholder?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -27,7 +33,7 @@ export function ClientSearchInput({ defaultValue = "" }: { defaultValue?: string
     const params = new URLSearchParams(searchParams.toString());
     params.delete("q");
     startTransition(() => {
-      router.replace(pathname);
+      router.replace(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`);
     });
   };
 
@@ -41,7 +47,7 @@ export function ClientSearchInput({ defaultValue = "" }: { defaultValue?: string
       />
       <input
         type="text"
-        placeholder="Search clients by name, company, email or phone..."
+        placeholder={placeholder}
         defaultValue={currentVal}
         onChange={(e) => handleSearch(e.target.value)}
         className="w-full bg-surface border border-border rounded-input pl-10 pr-9 py-2.5 text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-text-faint transition-colors"

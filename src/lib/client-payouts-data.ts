@@ -456,3 +456,179 @@ export async function getClientLedgerData(clientId: string) {
     },
   };
 }
+
+export type GlobalPayoutLedgerRow = {
+  id: string;
+  amount: number;
+  date: Date;
+  createdAt: Date;
+  method: string | null;
+  note: string | null;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    type: MemberType;
+    role: string;
+  };
+  deal: {
+    id: string;
+    projectName: string;
+    client: {
+      id: string;
+      name: string;
+      company: string | null;
+      email: string | null;
+    } | null;
+  } | null;
+  authorizedBy: ProvenanceInfo;
+};
+
+export type GlobalPayoutsLedgerResult = {
+  payouts: GlobalPayoutLedgerRow[];
+  totalCount: number;
+  totalAmount: number;
+  devTotal: number;
+  marketingTotal: number;
+};
+
+export async function getTotalPayoutsCount(): Promise<number> {
+  return db.payout.count();
+}
+
+export async function getAllPayoutsLedger(query?: string): Promise<GlobalPayoutsLedgerResult> {
+  const q = query?.trim().toLowerCase();
+
+  const payouts = await db.payout.findMany({
+    where: q
+      ? {
+          OR: [
+            { user: { name: { contains: q, mode: "insensitive" } } },
+            { user: { email: { contains: q, mode: "insensitive" } } },
+            { deal: { projectName: { contains: q, mode: "insensitive" } } },
+            { deal: { client: { name: { contains: q, mode: "insensitive" } } } },
+            { deal: { client: { company: { contains: q, mode: "insensitive" } } } },
+            { note: { contains: q, mode: "insensitive" } },
+            { method: { contains: q, mode: "insensitive" } },
+          ],
+        }
+      : {},
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          type: true,
+          role: true,
+        },
+      },
+      deal: {
+        select: {
+          id: true,
+          projectName: true,
+          createdBy: {
+            select: { id: true, name: true, email: true, role: true },
+          },
+          client: {
+            select: {
+              id: true,
+              name: true,
+              company: true,
+              email: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [
+      { date: "desc" },
+      { createdAt: "desc" },
+    ],
+  });
+
+  const payoutIds = payouts.map((p) => p.id);
+
+  // Fetch relevant audit logs for complete provenance attribution
+  const auditLogs = await db.auditLog.findMany({
+    where: {
+      OR: [
+        { entityType: "Payout", entityId: { in: payoutIds } },
+        { action: "payout.create" },
+      ],
+    },
+    include: {
+      user: { select: { id: true, name: true, email: true, role: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 500,
+  });
+
+  let totalAmount = 0;
+  let devTotal = 0;
+  let marketingTotal = 0;
+
+  const rows: GlobalPayoutLedgerRow[] = payouts.map((payout) => {
+    totalAmount += payout.amount;
+    if (payout.user.type === "DEV") {
+      devTotal += payout.amount;
+    } else if (payout.user.type === "MARKETING") {
+      marketingTotal += payout.amount;
+    }
+
+    const matchedLog = auditLogs.find(
+      (log) =>
+        log.entityId === payout.id ||
+        (log.action === "payout.create" &&
+          (log.entityId === payout.userId || (payout.dealId && log.entityId === payout.dealId)) &&
+          Math.abs(log.createdAt.getTime() - payout.createdAt.getTime()) < 60000)
+    );
+
+    const fallbackAuthor = payout.deal?.createdBy ?? {
+      name: "Admin",
+      email: "admin@spasht.dev",
+      role: "ADMIN",
+    };
+
+    const authorizedBy: ProvenanceInfo = matchedLog && matchedLog.user
+      ? {
+          userName: matchedLog.user.name,
+          userEmail: matchedLog.user.email,
+          userRole: matchedLog.user.role,
+          timestamp: matchedLog.createdAt,
+        }
+      : {
+          userName: fallbackAuthor.name,
+          userEmail: fallbackAuthor.email,
+          userRole: fallbackAuthor.role,
+          timestamp: payout.createdAt,
+        };
+
+    return {
+      id: payout.id,
+      amount: payout.amount,
+      date: payout.date,
+      createdAt: payout.createdAt,
+      method: payout.method,
+      note: payout.note,
+      user: payout.user,
+      deal: payout.deal
+        ? {
+            id: payout.deal.id,
+            projectName: payout.deal.projectName,
+            client: payout.deal.client,
+          }
+        : null,
+      authorizedBy,
+    };
+  });
+
+  return {
+    payouts: rows,
+    totalCount: rows.length,
+    totalAmount,
+    devTotal,
+    marketingTotal,
+  };
+}
+

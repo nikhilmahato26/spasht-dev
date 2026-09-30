@@ -168,4 +168,6 @@ export async function recordPayout(userId: string, formData: FormData) {
   revalidatePath(`/admin/team/${userId}`);
   revalidatePath("/admin/team");
   revalidatePath("/admin/my-payouts");
+  revalidatePath("/admin/client-payouts");
 }
+
