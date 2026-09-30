@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { computeDealSplit, resolveAssignmentAmount } from "@/lib/deal-calc";
+import { computeDealSplit } from "@/lib/deal-calc";
 import type { MemberType } from "@/generated/prisma/client";
 
 export type ClientSearchResult = {
@@ -38,12 +38,7 @@ export async function searchClientsWithPayoutStats(query?: string): Promise<Clie
         include: {
           payments: { select: { amount: true } },
           costItems: { select: { amount: true } },
-          payouts: {
-            select: {
-              amount: true,
-              user: { select: { type: true } },
-            },
-          },
+          sectionPayouts: { select: { amount: true, team: true } },
         },
       },
     },
@@ -66,10 +61,10 @@ export async function searchClientsWithPayoutStats(query?: string): Promise<Clie
 
       totalCosts += deal.costItems.reduce((s, c) => s + c.amount, 0) + deal.fixedCosts;
 
-      for (const p of deal.payouts) {
-        if (p.user.type === "DEV") {
+      for (const p of deal.sectionPayouts) {
+        if (p.team === "DEV") {
           devPayouts += p.amount;
-        } else if (p.user.type === "MARKETING") {
+        } else if (p.team === "MARKETING") {
           marketingPayouts += p.amount;
         }
       }
@@ -127,21 +122,20 @@ export type EnrichedCostItem = {
 
 export type EnrichedPayout = {
   id: string;
-  userId: string;
-  dealId: string | null;
+  dealId: string;
+  team: MemberType;
   amount: number;
   method: string | null;
   note: string | null;
   date: Date;
   createdAt: Date;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    type: MemberType;
-    role: string;
-  };
   authorizedBy: ProvenanceInfo;
+};
+
+export type SectionBalance = {
+  entitled: number;
+  paid: number;
+  due: number;
 };
 
 export type EnrichedDealTree = {
@@ -176,22 +170,10 @@ export type EnrichedDealTree = {
   costItems: EnrichedCostItem[];
   devPayouts: EnrichedPayout[];
   marketingPayouts: EnrichedPayout[];
-  assignments: {
-    id: string;
-    userId: string;
-    role: string | null;
-    allocationPercent: number;
-    allocationAmount: number;
-    user: {
-      id: string;
-      name: string;
-      email: string;
-      type: MemberType;
-      role: string;
-    };
-    totalPaid: number;
-    dueBalance: number;
-  }[];
+  sections: {
+    DEV: SectionBalance;
+    MARKETING: SectionBalance;
+  };
   totals: {
     inflow: number;
     costs: number;
@@ -214,15 +196,10 @@ export async function getClientLedgerData(clientId: string) {
           closedBy: { select: { id: true, name: true, email: true } },
           payments: { orderBy: { createdAt: "desc" } },
           costItems: { orderBy: { createdAt: "desc" } },
-          payouts: {
+          sectionPayouts: {
             orderBy: { createdAt: "desc" },
             include: {
-              user: { select: { id: true, name: true, email: true, type: true, role: true } },
-            },
-          },
-          assignments: {
-            include: {
-              user: { select: { id: true, name: true, email: true, type: true, role: true } },
+              createdBy: { select: { name: true, email: true, role: true } },
             },
           },
         },
@@ -240,8 +217,7 @@ export async function getClientLedgerData(clientId: string) {
       OR: [
         { entityType: "Deal", entityId: { in: dealIds } },
         { entityType: "Client", entityId: clientId },
-        { entityType: "Payout" },
-        { action: { in: ["payout.create", "payment.create", "costItem.create"] } },
+        { action: { in: ["payment.create", "costItem.create"] } },
       ],
     },
     include: {
@@ -314,51 +290,34 @@ export async function getClientLedgerData(clientId: string) {
       };
     });
 
-    // Enriched Payouts
+    // Section payouts — recorded against the Dev or Marketing pool as a whole
     const devPayouts: EnrichedPayout[] = [];
     const marketingPayouts: EnrichedPayout[] = [];
 
-    for (const payout of deal.payouts) {
-      const authorizedBy = findAuditAuthor(
-        (log) =>
-          log.entityId === payout.id ||
-          (log.action === "payout.create" &&
-            (log.entityId === payout.userId || log.entityId === deal.id) &&
-            Math.abs(log.createdAt.getTime() - payout.createdAt.getTime()) < 60000),
-        deal.createdBy,
-        payout.createdAt
-      );
-
+    for (const payout of deal.sectionPayouts) {
       const enriched: EnrichedPayout = {
-        ...payout,
-        authorizedBy,
+        id: payout.id,
+        dealId: payout.dealId,
+        team: payout.team,
+        amount: payout.amount,
+        method: payout.method,
+        note: payout.note,
+        date: payout.date,
+        createdAt: payout.createdAt,
+        authorizedBy: {
+          userName: payout.createdBy.name,
+          userEmail: payout.createdBy.email,
+          userRole: payout.createdBy.role,
+          timestamp: payout.createdAt,
+        },
       };
 
-      if (payout.user.type === "DEV") {
+      if (payout.team === "DEV") {
         devPayouts.push(enriched);
       } else {
         marketingPayouts.push(enriched);
       }
     }
-
-    // Enriched Assignments with accurate due tracking
-    const assignments = deal.assignments.map((assignment) => {
-      const allocationAmount = resolveAssignmentAmount(assignment, split.netEarning);
-      const totalPaid = deal.payouts
-        .filter((p) => p.userId === assignment.userId)
-        .reduce((sum, p) => sum + p.amount, 0);
-
-      return {
-        id: assignment.id,
-        userId: assignment.userId,
-        role: assignment.role,
-        allocationPercent: assignment.allocationPercent,
-        allocationAmount,
-        user: assignment.user,
-        totalPaid,
-        dueBalance: Math.max(0, allocationAmount - totalPaid),
-      };
-    });
 
     const inflow = deal.advanceReceived + payments.reduce((s, p) => s + p.amount, 0);
     const costsTotal = costItems.reduce((s, c) => s + c.amount, 0) + deal.fixedCosts;
@@ -366,6 +325,12 @@ export async function getClientLedgerData(clientId: string) {
     const marketingPaid = marketingPayouts.reduce((s, p) => s + p.amount, 0);
     const totalPaidOut = devPaid + marketingPaid;
     const netMargin = inflow - (costsTotal + totalPaidOut);
+
+    const sectionBalance = (entitled: number, paid: number): SectionBalance => ({
+      entitled,
+      paid,
+      due: Math.max(0, entitled - paid),
+    });
 
     return {
       id: deal.id,
@@ -385,7 +350,10 @@ export async function getClientLedgerData(clientId: string) {
       costItems,
       devPayouts,
       marketingPayouts,
-      assignments,
+      sections: {
+        DEV: sectionBalance(split.devPool, devPaid),
+        MARKETING: sectionBalance(split.marketing, marketingPaid),
+      },
       totals: {
         inflow,
         costs: costsTotal,
@@ -417,19 +385,6 @@ export async function getClientLedgerData(clientId: string) {
   const totalPayouts = totalDevPaid + totalMarketingPaid;
   const netClientMargin = totalInflow - (totalCosts + totalPayouts);
 
-  // Also retrieve active team members so the admin payout form can pick team members easily
-  const activeTeamMembers = await db.user.findMany({
-    where: { isActive: true },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      type: true,
-      role: true,
-    },
-    orderBy: [{ type: "asc" }, { name: "asc" }],
-  });
-
   return {
     client: {
       id: client.id,
@@ -442,7 +397,6 @@ export async function getClientLedgerData(clientId: string) {
       createdAt: client.createdAt,
     },
     deals: enrichedDeals,
-    activeTeamMembers,
     totals: {
       dealCount: enrichedDeals.length,
       totalRevenue,
@@ -464,13 +418,7 @@ export type GlobalPayoutLedgerRow = {
   createdAt: Date;
   method: string | null;
   note: string | null;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    type: MemberType;
-    role: string;
-  };
+  team: MemberType;
   deal: {
     id: string;
     projectName: string;
@@ -479,8 +427,8 @@ export type GlobalPayoutLedgerRow = {
       name: string;
       company: string | null;
       email: string | null;
-    } | null;
-  } | null;
+    };
+  };
   authorizedBy: ProvenanceInfo;
 };
 
@@ -493,18 +441,21 @@ export type GlobalPayoutsLedgerResult = {
 };
 
 export async function getTotalPayoutsCount(): Promise<number> {
-  return db.payout.count();
+  return db.sectionPayout.count();
 }
 
+// Only section-level (Dev / Marketing) payouts — individual team-member
+// payouts live on the team pages and are deliberately excluded here.
 export async function getAllPayoutsLedger(query?: string): Promise<GlobalPayoutsLedgerResult> {
   const q = query?.trim().toLowerCase();
 
-  const payouts = await db.payout.findMany({
+  const teamMatch = (["DEV", "MARKETING"] as const).filter((t) => q && t.toLowerCase().includes(q));
+
+  const payouts = await db.sectionPayout.findMany({
     where: q
       ? {
           OR: [
-            { user: { name: { contains: q, mode: "insensitive" } } },
-            { user: { email: { contains: q, mode: "insensitive" } } },
+            ...(teamMatch.length > 0 ? [{ team: { in: [...teamMatch] } }] : []),
             { deal: { projectName: { contains: q, mode: "insensitive" } } },
             { deal: { client: { name: { contains: q, mode: "insensitive" } } } },
             { deal: { client: { company: { contains: q, mode: "insensitive" } } } },
@@ -514,22 +465,11 @@ export async function getAllPayoutsLedger(query?: string): Promise<GlobalPayouts
         }
       : {},
     include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          type: true,
-          role: true,
-        },
-      },
+      createdBy: { select: { name: true, email: true, role: true } },
       deal: {
         select: {
           id: true,
           projectName: true,
-          createdBy: {
-            select: { id: true, name: true, email: true, role: true },
-          },
           client: {
             select: {
               id: true,
@@ -547,62 +487,17 @@ export async function getAllPayoutsLedger(query?: string): Promise<GlobalPayouts
     ],
   });
 
-  const payoutIds = payouts.map((p) => p.id);
-
-  // Fetch relevant audit logs for complete provenance attribution
-  const auditLogs = await db.auditLog.findMany({
-    where: {
-      OR: [
-        { entityType: "Payout", entityId: { in: payoutIds } },
-        { action: "payout.create" },
-      ],
-    },
-    include: {
-      user: { select: { id: true, name: true, email: true, role: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 500,
-  });
-
   let totalAmount = 0;
   let devTotal = 0;
   let marketingTotal = 0;
 
   const rows: GlobalPayoutLedgerRow[] = payouts.map((payout) => {
     totalAmount += payout.amount;
-    if (payout.user.type === "DEV") {
+    if (payout.team === "DEV") {
       devTotal += payout.amount;
-    } else if (payout.user.type === "MARKETING") {
+    } else if (payout.team === "MARKETING") {
       marketingTotal += payout.amount;
     }
-
-    const matchedLog = auditLogs.find(
-      (log) =>
-        log.entityId === payout.id ||
-        (log.action === "payout.create" &&
-          (log.entityId === payout.userId || (payout.dealId && log.entityId === payout.dealId)) &&
-          Math.abs(log.createdAt.getTime() - payout.createdAt.getTime()) < 60000)
-    );
-
-    const fallbackAuthor = payout.deal?.createdBy ?? {
-      name: "Admin",
-      email: "admin@spasht.dev",
-      role: "ADMIN",
-    };
-
-    const authorizedBy: ProvenanceInfo = matchedLog && matchedLog.user
-      ? {
-          userName: matchedLog.user.name,
-          userEmail: matchedLog.user.email,
-          userRole: matchedLog.user.role,
-          timestamp: matchedLog.createdAt,
-        }
-      : {
-          userName: fallbackAuthor.name,
-          userEmail: fallbackAuthor.email,
-          userRole: fallbackAuthor.role,
-          timestamp: payout.createdAt,
-        };
 
     return {
       id: payout.id,
@@ -611,15 +506,14 @@ export async function getAllPayoutsLedger(query?: string): Promise<GlobalPayouts
       createdAt: payout.createdAt,
       method: payout.method,
       note: payout.note,
-      user: payout.user,
-      deal: payout.deal
-        ? {
-            id: payout.deal.id,
-            projectName: payout.deal.projectName,
-            client: payout.deal.client,
-          }
-        : null,
-      authorizedBy,
+      team: payout.team,
+      deal: payout.deal,
+      authorizedBy: {
+        userName: payout.createdBy.name,
+        userEmail: payout.createdBy.email,
+        userRole: payout.createdBy.role,
+        timestamp: payout.createdAt,
+      },
     };
   });
 
@@ -631,4 +525,3 @@ export async function getAllPayoutsLedger(query?: string): Promise<GlobalPayouts
     marketingTotal,
   };
 }
-

@@ -24,6 +24,7 @@ model User {
   dealsCreated    Deal[]     @relation("CreatedBy")
   closedDeals     Deal[]     @relation("ClosedBy")
   payouts         Payout[]
+  sectionPayouts  SectionPayout[]
   auditLogs       AuditLog[]
 }
 
@@ -106,6 +107,7 @@ model Deal {
   payments    Payment[]
   costItems   CostItem[]
   payouts     Payout[]
+  sectionPayouts SectionPayout[]
 }
 
 enum DealStatus {
@@ -161,6 +163,24 @@ model Payout {
   method    String?
   date      DateTime @default(now())
   createdAt DateTime @default(now())
+}
+
+// ─── Money Out (to a whole section — Dev or Marketing — not a person) ───
+
+model SectionPayout {
+  id          String     @id @default(cuid())
+  dealId      String
+  deal        Deal       @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  team        MemberType
+  amount      Int
+  note        String?
+  method      String?
+  date        DateTime   @default(now())
+  createdById String
+  createdBy   User       @relation(fields: [createdById], references: [id])
+  createdAt   DateTime   @default(now())
+
+  @@index([dealId])
 }
 
 // ─── Expense Categories (for general, deal-less company overhead) ───

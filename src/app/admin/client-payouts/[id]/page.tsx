@@ -31,7 +31,7 @@ export default async function ClientPayoutWorkspacePage({
   const data = await getClientLedgerData(id);
   if (!data) notFound();
 
-  const { client, deals, activeTeamMembers, totals } = data;
+  const { client, deals, totals } = data;
 
   return (
     <div className="space-y-6">
@@ -114,7 +114,7 @@ export default async function ClientPayoutWorkspacePage({
 
       {/* Two Column Layout: Payout Form & Immutable Transaction Tree */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Issue Team Payout Form */}
+        {/* Left Column: Issue Section Payout Form */}
         <div className="lg:col-span-5 space-y-4">
           <Card className="border border-border rounded-card p-5 bg-surface">
             <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
@@ -122,8 +122,8 @@ export default async function ClientPayoutWorkspacePage({
                 <Send size={14} />
               </div>
               <div>
-                <h2 className="font-semibold text-sm text-text">Disburse Team Payout</h2>
-                <p className="text-2xs text-text-muted">Allocate funds to Dev and Marketing assignees</p>
+                <h2 className="font-semibold text-sm text-text">Disburse Section Payout</h2>
+                <p className="text-2xs text-text-muted">Pay out to the Dev or Marketing section</p>
               </div>
             </div>
 
@@ -133,20 +133,8 @@ export default async function ClientPayoutWorkspacePage({
                 id: d.id,
                 projectName: d.projectName,
                 status: d.status,
-                assignments: d.assignments.map((a) => ({
-                  userId: a.userId,
-                  role: a.role,
-                  user: {
-                    id: a.user.id,
-                    name: a.user.name,
-                    type: a.user.type,
-                  },
-                  allocationAmount: a.allocationAmount,
-                  totalPaid: a.totalPaid,
-                  dueBalance: a.dueBalance,
-                })),
+                sections: d.sections,
               }))}
-              activeTeamMembers={activeTeamMembers}
             />
           </Card>
         </div>

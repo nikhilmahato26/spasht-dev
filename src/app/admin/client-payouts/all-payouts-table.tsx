@@ -7,7 +7,7 @@ import {
   ShieldCheck,
   Building2,
   FolderKanban,
-  User,
+  Users,
   CreditCard,
   FileText,
   AlertCircle,
@@ -87,7 +87,7 @@ export function AllPayoutsTable({
           <div>
             <span className="font-semibold text-text">Immutable Audit Ledger</span>
             <span className="text-text-muted hidden md:inline ml-1.5">
-              — Chronological read-only log of every team disbursement. Records cannot be edited, modified, or deleted.
+              — Chronological read-only log of every Dev / Marketing section disbursement. Records cannot be edited, modified, or deleted.
             </span>
           </div>
         </div>
@@ -127,8 +127,8 @@ export function AllPayoutsTable({
               </th>
               <th className="py-3 px-4 font-semibold whitespace-nowrap">
                 <div className="flex items-center gap-1.5">
-                  <User size={13} className="text-text-faint" />
-                  <span>Recipient</span>
+                  <Users size={13} className="text-text-faint" />
+                  <span>Section</span>
                 </div>
               </th>
               <th className="py-3 px-4 font-semibold whitespace-nowrap">
@@ -149,8 +149,7 @@ export function AllPayoutsTable({
           </thead>
           <tbody className="divide-y divide-border font-sans">
             {payouts.map((payout) => {
-              const isDev = payout.user.type === "DEV";
-              const isMarketing = payout.user.type === "MARKETING";
+              const isDev = payout.team === "DEV";
 
               return (
                 <tr
@@ -173,76 +172,49 @@ export function AllPayoutsTable({
 
                   {/* Client & Company */}
                   <td className="py-3.5 px-4 whitespace-nowrap">
-                    {payout.deal?.client ? (
-                      <div className="flex flex-col">
-                        <Link
-                          href={`/admin/client-payouts/${payout.deal.client.id}`}
-                          className="font-medium text-text hover:text-dev transition-colors inline-flex items-center gap-1 group/link"
+                    <div className="flex flex-col">
+                      <Link
+                        href={`/admin/client-payouts/${payout.deal.client.id}`}
+                        className="font-medium text-text hover:text-dev transition-colors inline-flex items-center gap-1 group/link"
+                      >
+                        <span>{payout.deal.client.name}</span>
+                        <ArrowRight
+                          size={11}
+                          className="opacity-0 -translate-x-1 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all text-dev"
+                        />
+                      </Link>
+                      {payout.deal.client.company && (
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] py-0 px-1.5 rounded-sm uppercase tracking-wider bg-border/40 text-text-faint mt-0.5 w-fit"
                         >
-                          <span>{payout.deal.client.name}</span>
-                          <ArrowRight
-                            size={11}
-                            className="opacity-0 -translate-x-1 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all text-dev"
-                          />
-                        </Link>
-                        {payout.deal.client.company && (
-                          <Badge
-                            variant="secondary"
-                            className="text-[10px] py-0 px-1.5 rounded-sm uppercase tracking-wider bg-border/40 text-text-faint mt-0.5 w-fit"
-                          >
-                            {payout.deal.client.company}
-                          </Badge>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col">
-                        <span className="text-xs text-text-muted italic">General / Internal</span>
-                        <span className="text-[10px] text-text-faint">Direct company payout</span>
-                      </div>
-                    )}
+                          {payout.deal.client.company}
+                        </Badge>
+                      )}
+                    </div>
                   </td>
 
                   {/* Deal / Project */}
                   <td className="py-3.5 px-4 whitespace-nowrap">
-                    {payout.deal ? (
-                      <Link
-                        href={`/admin/deals/${payout.deal.id}`}
-                        className="text-xs font-medium text-text-muted hover:text-text transition-colors"
-                      >
-                        {payout.deal.projectName}
-                      </Link>
-                    ) : (
-                      <span className="text-2xs text-text-faint font-mono">No deal linked</span>
-                    )}
+                    <Link
+                      href={`/admin/deals/${payout.deal.id}`}
+                      className="text-xs font-medium text-text-muted hover:text-text transition-colors"
+                    >
+                      {payout.deal.projectName}
+                    </Link>
                   </td>
 
-                  {/* Recipient */}
+                  {/* Section */}
                   <td className="py-3.5 px-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-medium text-text">{payout.user.name}</span>
-                          {isDev && (
-                            <Badge className="text-[10px] py-0 px-1.5 rounded font-mono font-medium bg-dev/10 text-dev border border-dev/20">
-                              DEV
-                            </Badge>
-                          )}
-                          {isMarketing && (
-                            <Badge className="text-[10px] py-0 px-1.5 rounded font-mono font-medium bg-marketing/10 text-marketing border border-marketing/20">
-                              MARKETING
-                            </Badge>
-                          )}
-                          {!isDev && !isMarketing && (
-                            <Badge className="text-[10px] py-0 px-1.5 rounded font-mono font-medium bg-border/50 text-text-muted border border-border">
-                              {payout.user.type}
-                            </Badge>
-                          )}
-                        </div>
-                        <span className="text-2xs text-text-faint">
-                          {payout.user.role || payout.user.email}
-                        </span>
-                      </div>
-                    </div>
+                    {isDev ? (
+                      <Badge className="text-[10px] py-0 px-1.5 rounded font-mono font-medium bg-dev/10 text-dev border border-dev/20">
+                        DEV
+                      </Badge>
+                    ) : (
+                      <Badge className="text-[10px] py-0 px-1.5 rounded font-mono font-medium bg-marketing/10 text-marketing border border-marketing/20">
+                        MARKETING
+                      </Badge>
+                    )}
                   </td>
 
                   {/* Method */}
@@ -256,7 +228,7 @@ export function AllPayoutsTable({
                   <td className="py-3.5 px-4 text-right whitespace-nowrap">
                     <span
                       className={`font-mono text-sm font-semibold ${
-                        isDev ? "text-dev" : isMarketing ? "text-marketing" : "text-text"
+                        isDev ? "text-dev" : "text-marketing"
                       }`}
                     >
                       {formatPaisa(payout.amount)}
@@ -297,8 +269,8 @@ export function AllPayoutsTable({
                   <p className="font-medium text-text text-sm">No Payout Records Found</p>
                   <p className="text-xs text-text-faint mt-1 max-w-md mx-auto">
                     {searchQuery
-                      ? `No payout entries matched your search "${searchQuery}". Try searching by another client name, recipient, or note.`
-                      : "No team payouts have been recorded yet. Payouts recorded from client deals will automatically stream into this table."}
+                      ? `No payout entries matched your search "${searchQuery}". Try searching by another client name, section, or note.`
+                      : "No section payouts have been recorded yet. Payouts recorded from client deals will automatically stream into this table."}
                   </p>
                 </td>
               </tr>

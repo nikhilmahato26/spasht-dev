@@ -143,7 +143,7 @@ export default async function ClientPayoutsPage({
           defaultValue={q ?? ""}
           placeholder={
             activeTab === "payouts"
-              ? "Search payouts by client, recipient, project, method, or note..."
+              ? "Search payouts by client, section (dev / marketing), project, method, or note..."
               : "Search clients by name, company, email or phone..."
           }
         />

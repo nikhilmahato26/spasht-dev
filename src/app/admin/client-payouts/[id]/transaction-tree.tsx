@@ -372,12 +372,12 @@ export function TransactionTree({
                       </div>
                     )}
 
-                    {/* Sub-Branch 3: Dev Team Payouts */}
+                    {/* Sub-Branch 3: Dev Section Payouts */}
                     {showDev && (
                       <div className="relative pl-5 border-l-2 border-dev/40 space-y-3">
                         <div className="flex items-center gap-2 text-xs font-semibold text-dev uppercase tracking-label">
                           <Code size={15} />
-                          <span>Dev Team Payouts</span>
+                          <span>Dev Section Payouts</span>
                           <span className="font-mono text-text-faint text-2xs normal-case">
                             ({deal.devPayouts.length} disbursements)
                           </span>
@@ -390,7 +390,7 @@ export function TransactionTree({
                           >
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-text">{payout.user.name}</span>
+                                <span className="font-medium text-text">Dev Section</span>
                                 <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.2 rounded bg-dev-soft text-dev font-semibold">
                                   DEV
                                 </span>
@@ -430,12 +430,12 @@ export function TransactionTree({
                       </div>
                     )}
 
-                    {/* Sub-Branch 4: Marketing Team Payouts */}
+                    {/* Sub-Branch 4: Marketing Section Payouts */}
                     {showMarketing && (
                       <div className="relative pl-5 border-l-2 border-marketing/40 space-y-3">
                         <div className="flex items-center gap-2 text-xs font-semibold text-marketing uppercase tracking-label">
                           <Megaphone size={15} />
-                          <span>Marketing Team Payouts</span>
+                          <span>Marketing Section Payouts</span>
                           <span className="font-mono text-text-faint text-2xs normal-case">
                             ({deal.marketingPayouts.length} disbursements)
                           </span>
@@ -448,7 +448,7 @@ export function TransactionTree({
                           >
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-text">{payout.user.name}</span>
+                                <span className="font-medium text-text">Marketing Section</span>
                                 <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.2 rounded bg-marketing-soft text-marketing font-semibold">
                                   MARKETING
                                 </span>

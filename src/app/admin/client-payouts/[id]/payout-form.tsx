@@ -7,53 +7,43 @@ import {
   Calendar,
   CreditCard,
   FileText,
-  UserCheck,
+  Code,
+  Megaphone,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
 import { formatPaisa } from "@/lib/money";
-import { recordClientTeamPayout } from "../actions";
+import { recordSectionPayout } from "../actions";
 
-type AssigneeInfo = {
-  userId: string;
-  role: string | null;
-  user: {
-    id: string;
-    name: string;
-    type: string;
-  };
-  allocationAmount: number;
-  totalPaid: number;
-  dueBalance: number;
+type Section = "DEV" | "MARKETING";
+
+type SectionBalance = {
+  entitled: number;
+  paid: number;
+  due: number;
 };
 
 type DealOption = {
   id: string;
   projectName: string;
   status: string;
-  assignments: AssigneeInfo[];
+  sections: Record<Section, SectionBalance>;
 };
 
-type TeamMemberOption = {
-  id: string;
-  name: string;
-  email: string;
-  type: string;
-  role: string;
-};
+const SECTIONS: { id: Section; label: string; icon: typeof Code }[] = [
+  { id: "DEV", label: "Dev", icon: Code },
+  { id: "MARKETING", label: "Marketing", icon: Megaphone },
+];
 
 export function PayoutForm({
   clientId,
   deals,
-  activeTeamMembers,
 }: {
   clientId: string;
   deals: DealOption[];
-  activeTeamMembers: TeamMemberOption[];
 }) {
   const [selectedDealId, setSelectedDealId] = useState<string>(deals[0]?.id || "");
-  const [teamTypeFilter, setTeamTypeFilter] = useState<"ALL" | "DEV" | "MARKETING">("ALL");
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [team, setTeam] = useState<Section>("DEV");
   const [amountInput, setAmountInput] = useState<string>("");
   const [method, setMethod] = useState<string>("Bank Transfer");
   const [note, setNote] = useState<string>("");
@@ -63,19 +53,11 @@ export function PayoutForm({
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const currentDeal = deals.find((d) => d.id === selectedDealId);
-
-  // Filter members by team type if toggled
-  const filteredTeamMembers = activeTeamMembers.filter((m) => {
-    if (teamTypeFilter === "ALL") return true;
-    return m.type === teamTypeFilter;
-  });
-
-  // Check if selected user is an assignee on the current deal
-  const currentAssignment = currentDeal?.assignments.find((a) => a.userId === selectedUserId);
+  const balance = currentDeal?.sections[team];
 
   const handleFillDue = () => {
-    if (currentAssignment && currentAssignment.dueBalance > 0) {
-      setAmountInput(String(currentAssignment.dueBalance / 100));
+    if (balance && balance.due > 0) {
+      setAmountInput(String(balance.due / 100));
     }
   };
 
@@ -86,7 +68,7 @@ export function PayoutForm({
     const formData = new FormData(e.currentTarget);
     formData.set("clientId", clientId);
     formData.set("dealId", selectedDealId);
-    formData.set("userId", selectedUserId);
+    formData.set("team", team);
     formData.set("amount", amountInput);
     formData.set("method", method);
     formData.set("note", note);
@@ -94,7 +76,7 @@ export function PayoutForm({
 
     startTransition(async () => {
       try {
-        await recordClientTeamPayout(formData);
+        await recordSectionPayout(formData);
         setFeedback({
           type: "success",
           message: `Successfully recorded payout of ₹${Number(amountInput).toLocaleString("en-IN")}!`,
@@ -142,90 +124,58 @@ export function PayoutForm({
         </select>
       </div>
 
-      {/* Team Filter & Member Selection */}
+      {/* Section Selection */}
       <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="text-2xs uppercase tracking-label font-semibold text-text-muted">
-            Team Member (Dev or Marketing)
-          </label>
-          <div className="flex items-center gap-1 bg-bg p-0.5 rounded-sm border border-border">
-            {(["ALL", "DEV", "MARKETING"] as const).map((t) => (
+        <label className="block text-2xs uppercase tracking-label font-semibold text-text-muted mb-1.5">
+          Pay To Section
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {SECTIONS.map(({ id, label, icon: Icon }) => {
+            const active = team === id;
+            const activeClass =
+              id === "DEV"
+                ? "bg-dev-soft border-dev/40 text-dev"
+                : "bg-marketing-soft border-marketing/40 text-marketing";
+            return (
               <button
-                key={t}
+                key={id}
                 type="button"
-                onClick={() => setTeamTypeFilter(t)}
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-xs transition-colors ${
-                  teamTypeFilter === t
-                    ? "bg-surface text-text shadow-xs"
-                    : "text-text-muted hover:text-text"
+                onClick={() => setTeam(id)}
+                aria-pressed={active}
+                className={`flex items-center justify-center gap-2 border rounded-input px-3 py-2 text-sm font-semibold transition-colors ${
+                  active ? activeClass : "bg-bg border-border text-text-muted hover:text-text"
                 }`}
               >
-                {t}
+                <Icon size={15} />
+                <span>{label}</span>
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
-
-        <select
-          value={selectedUserId}
-          onChange={(e) => setSelectedUserId(e.target.value)}
-          required
-          className="w-full bg-bg border border-border rounded-input px-3 py-2 text-sm text-text focus:outline-none focus:border-text-faint transition-colors"
-        >
-          <option value="">-- Choose Team Member --</option>
-          {/* First show assigned members on this deal */}
-          {currentDeal && currentDeal.assignments.length > 0 && (
-            <optgroup label="Assigned on this Deal">
-              {currentDeal.assignments
-                .filter((a) => teamTypeFilter === "ALL" || a.user.type === teamTypeFilter)
-                .map((a) => (
-                  <option key={`assigned-${a.userId}`} value={a.userId}>
-                    {a.user.name} ({a.user.type}) · Due: {formatPaisa(a.dueBalance)}
-                  </option>
-                ))}
-            </optgroup>
-          )}
-
-          {/* All active members */}
-          <optgroup label="All Team Members">
-            {filteredTeamMembers.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name} ({member.type}) · {member.role}
-              </option>
-            ))}
-          </optgroup>
-        </select>
       </div>
 
-      {/* Assignment Entitlement & Balance Banner */}
-      {currentAssignment && (
+      {/* Section Entitlement & Balance Banner */}
+      {balance && (
         <div className="bg-bg/80 border border-border rounded-input p-3 text-xs flex items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-1.5 font-medium text-text">
-              <UserCheck size={14} className="text-dev" />
-              <span>{currentAssignment.user.name}</span>
-              <span className="text-2xs uppercase tracking-wider text-text-muted px-1.5 py-0.2 bg-border/40 rounded">
-                {currentAssignment.user.type}
-              </span>
-            </div>
-            <div className="text-2xs text-text-faint mt-1 space-x-2">
-              <span>Entitled: {formatPaisa(currentAssignment.allocationAmount)}</span>
-              <span>·</span>
-              <span>Paid: {formatPaisa(currentAssignment.totalPaid)}</span>
-              <span>·</span>
-              <span className="text-pending font-semibold">
-                Due: {formatPaisa(currentAssignment.dueBalance)}
-              </span>
-            </div>
+          <div className="text-2xs text-text-faint space-x-2">
+            <span>Pool: {formatPaisa(balance.entitled)}</span>
+            <span>·</span>
+            <span>Paid: {formatPaisa(balance.paid)}</span>
+            <span>·</span>
+            <span className="text-pending font-semibold">Due: {formatPaisa(balance.due)}</span>
           </div>
 
-          {currentAssignment.dueBalance > 0 && (
+          {balance.due > 0 && (
             <button
               type="button"
               onClick={handleFillDue}
-              className="text-[11px] font-medium text-dev bg-dev-soft border border-dev/30 hover:bg-dev/20 px-2.5 py-1 rounded transition-colors shrink-0"
+              className={`text-[11px] font-medium px-2.5 py-1 rounded border transition-colors shrink-0 ${
+                team === "DEV"
+                  ? "text-dev bg-dev-soft border-dev/30 hover:bg-dev/20"
+                  : "text-marketing bg-marketing-soft border-marketing/30 hover:bg-marketing/20"
+              }`}
             >
-              Fill Due ({formatPaisa(currentAssignment.dueBalance)})
+              Fill Due ({formatPaisa(balance.due)})
             </button>
           )}
         </div>
@@ -322,11 +272,11 @@ export function PayoutForm({
       {/* Submit Button */}
       <button
         type="submit"
-        disabled={isPending || !selectedUserId || !amountInput}
+        disabled={isPending || !selectedDealId || !amountInput}
         className="w-full bg-text text-surface font-semibold text-sm py-2.5 px-4 rounded-btn hover:bg-black transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
         <Send size={15} />
-        <span>{isPending ? "Recording Payout..." : "Record Team Payout"}</span>
+        <span>{isPending ? "Recording Payout..." : `Record ${team === "DEV" ? "Dev" : "Marketing"} Payout`}</span>
       </button>
     </form>
   );
