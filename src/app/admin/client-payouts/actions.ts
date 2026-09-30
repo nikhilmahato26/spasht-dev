@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/dal";
+import { requirePermission } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { rupeesToPaisa } from "@/lib/money";
@@ -17,7 +17,7 @@ function num(formData: FormData, key: string): number {
 }
 
 export async function recordSectionPayout(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("PAYOUTS_MANAGE");
 
   const clientId = str(formData, "clientId");
   const dealId = str(formData, "dealId");

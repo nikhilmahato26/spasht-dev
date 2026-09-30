@@ -48,7 +48,7 @@ function Switch({
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange?.(!checked)}
-      className={`relative inline-flex h-[18px] w-8 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
+      className={`relative inline-flex h-4.5 w-8 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
         checked ? "bg-accent" : "bg-border"
       } ${disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer active:scale-95"} ${
         pending ? "opacity-60" : ""
@@ -56,7 +56,7 @@ function Switch({
     >
       <span
         className={`inline-block h-3.5 w-3.5 rounded-full bg-surface shadow-sm transition-transform duration-200 ease-out ${
-          checked ? "translate-x-[16px]" : "translate-x-[2px]"
+          checked ? "translate-x-4" : "translate-x-0.5"
         }`}
       />
     </button>
@@ -176,9 +176,9 @@ export function PermissionsMatrix({ rows }: { rows: PermissionRow[] }) {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-border">
-              <th className="py-3 pl-5 pr-4 text-xs font-medium text-text-muted min-w-[220px]">User</th>
+              <th className="py-3 pl-5 pr-4 text-xs font-medium text-text-muted min-w-55">User</th>
               {PERMISSIONS.map((p) => (
-                <th key={p.key} className="py-3 px-3 text-center align-bottom min-w-[112px]">
+                <th key={p.key} className="py-3 px-3 text-center align-bottom min-w-28">
                   <span className="block text-xs font-medium text-text-muted leading-snug">{p.label}</span>
                   <span className="block text-[11px] text-text-faint font-normal leading-snug mt-0.5">
                     {p.hint}
@@ -218,13 +218,19 @@ export function PermissionsMatrix({ rows }: { rows: PermissionRow[] }) {
                     </div>
                   </td>
                   {PERMISSIONS.map((p) => {
-                    const on = isAdmin || rowPerms.includes(p.key);
+                    // Record payouts implies View payouts (see can()), so lock it on.
+                    const implied = p.key === "PAYOUTS_VIEW" && rowPerms.includes("PAYOUTS_MANAGE");
+                    const on = isAdmin || implied || rowPerms.includes(p.key);
                     return (
-                      <td key={p.key} className="py-3 px-3 text-center">
+                      <td
+                        key={p.key}
+                        className="py-3 px-3 text-center"
+                        title={implied ? "Included with Record payouts" : undefined}
+                      >
                         <div className="flex justify-center">
                           <Switch
                             checked={on}
-                            disabled={isAdmin}
+                            disabled={isAdmin || implied}
                             pending={pendingCell === `${row.id}:${p.key}`}
                             label={`${p.label} for ${row.name}`}
                             onChange={(next) => toggle(row.id, p.key, next)}

@@ -10,7 +10,8 @@ import {
   Send,
   GitBranch,
 } from "lucide-react";
-import { requireAdmin } from "@/lib/dal";
+import { requirePermission } from "@/lib/dal";
+import { can } from "@/lib/permissions";
 import { getClientLedgerData } from "@/lib/client-payouts-data";
 import { formatPaisa } from "@/lib/money";
 import { SummaryCard } from "@/components/summary-card";
@@ -24,7 +25,8 @@ export default async function ClientPayoutWorkspacePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
+  const user = await requirePermission("PAYOUTS_VIEW");
+  const canRecord = can(user, "PAYOUTS_MANAGE");
   const { id } = await params;
 
   const data = await getClientLedgerData(id);
@@ -107,33 +109,35 @@ export default async function ClientPayoutWorkspacePage({
 
       {/* Two Column Layout: Payout Form & Immutable Transaction Tree */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Issue Section Payout Form */}
-        <div className="lg:col-span-5 space-y-4">
-          <Card className="border border-border rounded-card p-5 bg-surface">
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
-              <div className="w-7 h-7 rounded-full bg-text text-surface flex items-center justify-center">
-                <Send size={14} />
+        {/* Left Column: Issue Section Payout Form (only with Record payouts) */}
+        {canRecord && (
+          <div className="lg:col-span-5 space-y-4">
+            <Card className="border border-border rounded-card p-5 bg-surface">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
+                <div className="w-7 h-7 rounded-full bg-text text-surface flex items-center justify-center">
+                  <Send size={14} />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-sm text-text">Disburse Section Payout</h2>
+                  <p className="text-2xs text-text-muted">Pay out to the Dev or Marketing section</p>
+                </div>
               </div>
-              <div>
-                <h2 className="font-semibold text-sm text-text">Disburse Section Payout</h2>
-                <p className="text-2xs text-text-muted">Pay out to the Dev or Marketing section</p>
-              </div>
-            </div>
 
-            <PayoutForm
-              clientId={client.id}
-              deals={deals.map((d) => ({
-                id: d.id,
-                projectName: d.projectName,
-                status: d.status,
-                sections: d.sections,
-              }))}
-            />
-          </Card>
-        </div>
+              <PayoutForm
+                clientId={client.id}
+                deals={deals.map((d) => ({
+                  id: d.id,
+                  projectName: d.projectName,
+                  status: d.status,
+                  sections: d.sections,
+                }))}
+              />
+            </Card>
+          </div>
+        )}
 
         {/* Right Column: Immutable Transaction Tree */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className={`${canRecord ? "lg:col-span-7" : "lg:col-span-12"} space-y-4`}>
           <div className="flex items-center gap-2">
             <GitBranch size={16} className="text-dev" />
             <h2 className="font-semibold text-base text-text">Transaction Audit Tree</h2>

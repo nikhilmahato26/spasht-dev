@@ -7,7 +7,7 @@ import {
   IndianRupee,
   Layers,
 } from "lucide-react";
-import { requireAdmin } from "@/lib/dal";
+import { requirePermission } from "@/lib/dal";
 import {
   searchClientsWithPayoutStats,
   getAllPayoutsLedger,
@@ -33,7 +33,7 @@ export default async function ClientPayoutsPage({
     pageSize?: string;
   }>;
 }) {
-  await requireAdmin();
+  await requirePermission("PAYOUTS_VIEW");
   const { q, tab, page: pageParam, pageSize: pageSizeParam } = await searchParams;
   const activeTab = tab === "payouts" ? "payouts" : "clients";
 

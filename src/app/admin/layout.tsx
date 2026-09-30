@@ -46,7 +46,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         ...(can(user, "CLIENTS_MANAGE")
           ? [{ href: "/admin/clients", label: "Clients", icon: <Users {...iconProps} /> }]
           : []),
-        ...(user.role === "ADMIN"
+        ...(can(user, "PAYOUTS_VIEW")
           ? [{ href: "/admin/client-payouts", label: "Client Payouts", icon: <WalletCards {...iconProps} /> }]
           : []),
         ...(can(user, "EXPENSES_VIEW")

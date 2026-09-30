@@ -47,6 +47,8 @@ enum Permission {
   CATEGORIES_MANAGE
   EXPENSES_VIEW
   DEV_PROJECTS
+  PAYOUTS_VIEW
+  PAYOUTS_MANAGE
 }
 
 // ─── Business Categories ───
