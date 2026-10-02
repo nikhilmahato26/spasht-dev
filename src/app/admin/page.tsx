@@ -26,6 +26,7 @@ import { Sparkline } from "@/components/sparkline";
 import { RevenueTrendChart } from "@/components/revenue-trend-chart";
 import { RevenueDonut } from "@/components/revenue-donut";
 import { DealPipeline } from "@/components/deal-pipeline";
+import { CollectionsList, type CollectionItem } from "@/components/collections-list";
 import { FormSelect } from "@/components/form-select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -320,6 +321,29 @@ export default async function HomePage(props: {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
 
+    // Deals with money still owed, largest first. "Waiting" counts from the
+    // last payment (or deal creation when nothing has come in beyond the advance).
+    const collectionItems: CollectionItem[] = deals
+      .filter((d) => d.dueMoney > 0)
+      .sort((a, b) => b.dueMoney - a.dueMoney)
+      .map((d) => {
+        const lastIn = d.payments.reduce(
+          (latest, p) => (p.date > latest ? p.date : latest),
+          d.createdAt
+        );
+        return {
+          id: d.id,
+          projectName: d.projectName,
+          clientName: d.client.name,
+          statusLabel: STATUS_LABELS[d.status],
+          due: d.dueMoney,
+          total: d.totalPrice,
+          daysWaiting: Math.max(0, Math.floor((now.getTime() - lastIn.getTime()) / 86_400_000)),
+          href: canOpenDeal(d.id) ? `/admin/deals/${d.id}` : null,
+        };
+      });
+    const overdueCount = collectionItems.filter((i) => i.daysWaiting > 30).length;
+
     const recentDeals = [...deals]
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, 5);
@@ -449,8 +473,14 @@ export default async function HomePage(props: {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-          <div className="lg:col-span-2 bg-surface border border-border rounded-card p-5 shadow-sm">
+          <div className="lg:col-span-2 bg-surface border border-border rounded-card p-5 shadow-sm flex flex-col">
             <RevenueTrendChart data={dailyTrendData} />
+            <CollectionsList
+              items={collectionItems}
+              totalDue={totalDue}
+              dealCount={dueDealsCount}
+              viewAllHref={can(user, "DEALS_VIEW") ? "/admin/deals?sort=dueMoney" : null}
+            />
           </div>
 
           <div className="flex flex-col gap-4">
@@ -464,6 +494,14 @@ export default async function HomePage(props: {
                   <>
                     {dueDealsCount} deal{dueDealsCount === 1 ? "" : "s"} have pending dues
                     totaling <span className="font-mono font-semibold">{formatPaisa(totalDue)}</span>.
+                    {overdueCount > 0 && (
+                      <>
+                        {" "}
+                        <span className="font-semibold text-cost">
+                          {overdueCount} {overdueCount === 1 ? "hasn't" : "haven't"} seen a payment in 30+ days.
+                        </span>
+                      </>
+                    )}
                   </>
                 ) : (
                   "No outstanding dues right now."
