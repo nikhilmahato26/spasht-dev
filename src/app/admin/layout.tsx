@@ -15,11 +15,12 @@ import { requireUser } from "@/lib/dal";
 import { can } from "@/lib/permissions";
 import { signOut } from "@/auth";
 import { SidebarNav } from "@/components/sidebar-nav";
-import { MobileSidebar } from "@/components/mobile-sidebar";
+import { MobileSidebar, SIDEBAR_COLLAPSED_COOKIE } from "@/components/mobile-sidebar";
 import { NotificationBell } from "@/components/notification-bell";
 import { PageContainer } from "@/components/page-container";
 import { AdminThemeProvider, NightModeToggle } from "@/components/admin-theme";
 import Image from "next/image";
+import { cookies } from "next/headers";
 
 function initials(name: string) {
   return name
@@ -32,6 +33,7 @@ function initials(name: string) {
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  const sidebarCollapsed = (await cookies()).get(SIDEBAR_COLLAPSED_COOKIE)?.value === "1";
 
   const iconProps = { size: 16, strokeWidth: 2, className: "shrink-0" };
 
@@ -84,19 +86,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
           color to inherit — otherwise only elements with their own explicit
           text-* class would pick up the dark palette. */}
       <div className="h-screen flex overflow-hidden bg-bg text-text">
-        <MobileSidebar>
-          <div className="px-3 mb-7">
+        <MobileSidebar defaultCollapsed={sidebarCollapsed}>
+          <div className="px-3 mb-7 lg:group-data-[collapsed=true]/sidebar:px-0">
             {/* bg-[#1b1d1e] instead of bg-text: the logo PNG is a fixed
                 light-colored asset, so its chip needs a permanently dark
                 backdrop — bg-text would flip to a light background in night
-                mode (since --color-text lightens) and hide the logo. */}
-            <div className="rounded-btn bg-[#1b1d1e] px-3 py-2 inline-flex items-center shadow-sm">
+                mode (since --color-text lightens) and hide the logo.
+                In the collapsed rail the chip shrinks to a square that crops
+                the wordmark down to just the mark. */}
+            <div className="rounded-btn bg-[#1b1d1e] px-3 py-2 inline-flex items-center shadow-sm overflow-hidden transition-[width,padding] duration-200 lg:group-data-[collapsed=true]/sidebar:w-10 lg:group-data-[collapsed=true]/sidebar:h-10 lg:group-data-[collapsed=true]/sidebar:pl-2 lg:group-data-[collapsed=true]/sidebar:pr-0">
               <Image
                 src="/logo.png"
                 alt="Spasht"
                 width={140}
                 height={40}
-                className="w-auto h-6"
+                className="w-auto h-6 max-w-none"
                 priority
               />
             </div>
