@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Search, X } from "lucide-react";
 
 export function ClientSearchInput({
@@ -15,8 +15,12 @@ export function ClientSearchInput({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  // Local value: the ledger page mounts one input per tab, and ?q only
+  // belongs to whichever tab is active.
+  const [value, setValue] = useState(defaultValue);
 
   const handleSearch = (term: string) => {
+    setValue(term);
     const params = new URLSearchParams(searchParams.toString());
     if (term.trim()) {
       params.set("q", term.trim());
@@ -31,6 +35,7 @@ export function ClientSearchInput({
   };
 
   const handleClear = () => {
+    setValue("");
     const params = new URLSearchParams(searchParams.toString());
     params.delete("q");
     params.delete("page");
@@ -38,8 +43,6 @@ export function ClientSearchInput({
       router.replace(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`);
     });
   };
-
-  const currentVal = searchParams.get("q") ?? defaultValue;
 
   return (
     <div className="relative flex-1 max-w-md">
@@ -50,11 +53,11 @@ export function ClientSearchInput({
       <input
         type="text"
         placeholder={placeholder}
-        defaultValue={currentVal}
+        value={value}
         onChange={(e) => handleSearch(e.target.value)}
         className="w-full bg-surface border border-border rounded-input pl-10 pr-9 py-2.5 text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-text-faint transition-colors"
       />
-      {currentVal && (
+      {value && (
         <button
           type="button"
           onClick={handleClear}

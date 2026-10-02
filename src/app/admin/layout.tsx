@@ -47,7 +47,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           ? [{ href: "/admin/clients", label: "Clients", icon: <Users {...iconProps} /> }]
           : []),
         ...(can(user, "PAYOUTS_VIEW")
-          ? [{ href: "/admin/client-payouts", label: "Client Payouts", icon: <WalletCards {...iconProps} /> }]
+          ? [{ href: "/admin/client-payouts", label: "Ledger", icon: <WalletCards {...iconProps} /> }]
           : []),
         ...(can(user, "EXPENSES_VIEW")
           ? [{ href: "/admin/expenses", label: "Expenses", icon: <Receipt {...iconProps} /> }]

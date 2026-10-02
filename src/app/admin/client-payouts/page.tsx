@@ -19,7 +19,7 @@ import { SummaryCard } from "@/components/summary-card";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ClientSearchInput } from "./client-search-input";
-import { ClientPayoutsSubTabs } from "./sub-tabs";
+import { ClientPayoutsTabs } from "./sub-tabs";
 import { AllPayoutsTable } from "./all-payouts-table";
 import { PaginationControls } from "./pagination-controls";
 
@@ -37,22 +37,24 @@ export default async function ClientPayoutsPage({
   const { q, tab, page: pageParam, pageSize: pageSizeParam } = await searchParams;
   const activeTab = tab === "payouts" ? "payouts" : "clients";
 
-  // Parse pagination parameters
+  // ?q and ?page belong to the active tab only; the other tab is rendered
+  // with defaults so the client can switch to it instantly.
   const rawPage = parseInt(pageParam || "1", 10);
-  const rawPageSize = parseInt(pageSizeParam || (activeTab === "payouts" ? "20" : "15"), 10);
+  const requestedPage = isNaN(rawPage) ? 1 : rawPage;
   const validPageSizes = [10, 15, 20, 25, 50, 100];
-  const pageSize = validPageSizes.includes(rawPageSize)
-    ? rawPageSize
-    : activeTab === "payouts"
-    ? 20
-    : 15;
+  const resolvePageSize = (forTab: "clients" | "payouts") => {
+    const fallback = forTab === "payouts" ? 20 : 15;
+    const raw = forTab === activeTab ? parseInt(pageSizeParam || String(fallback), 10) : fallback;
+    return validPageSizes.includes(raw) ? raw : fallback;
+  };
+  const clientPageSize = resolvePageSize("clients");
+  const payoutPageSize = resolvePageSize("payouts");
 
-  // Fetch client data
-  const clients = await searchClientsWithPayoutStats(activeTab === "clients" ? q : undefined);
-
-  // Fetch all payouts data
-  const allPayoutsData = await getAllPayoutsLedger(activeTab === "payouts" ? q : undefined);
-  const totalPayoutsInDb = await getTotalPayoutsCount();
+  const [clients, allPayoutsData, totalPayoutsInDb] = await Promise.all([
+    searchClientsWithPayoutStats(activeTab === "clients" ? q : undefined),
+    getAllPayoutsLedger(activeTab === "payouts" ? q : undefined),
+    getTotalPayoutsCount(),
+  ]);
 
   // Compute rollups across all clients
   const totalInflow = clients.reduce((s, c) => s + c.totalInflow, 0);
@@ -62,34 +64,40 @@ export default async function ClientPayoutsPage({
 
   // Pagination for clients
   const totalClientsCount = clients.length;
-  const totalClientPages = Math.max(1, Math.ceil(totalClientsCount / pageSize));
+  const totalClientPages = Math.max(1, Math.ceil(totalClientsCount / clientPageSize));
   const currentClientPage = Math.min(
-    Math.max(1, isNaN(rawPage) ? 1 : rawPage),
+    Math.max(1, activeTab === "clients" ? requestedPage : 1),
     totalClientPages
   );
   const paginatedClients = clients.slice(
-    (currentClientPage - 1) * pageSize,
-    currentClientPage * pageSize
+    (currentClientPage - 1) * clientPageSize,
+    currentClientPage * clientPageSize
   );
 
   // Pagination for payouts
   const totalPayoutsCount = allPayoutsData.payouts.length;
-  const totalPayoutPages = Math.max(1, Math.ceil(totalPayoutsCount / pageSize));
+  const totalPayoutPages = Math.max(1, Math.ceil(totalPayoutsCount / payoutPageSize));
   const currentPayoutPage = Math.min(
-    Math.max(1, isNaN(rawPage) ? 1 : rawPage),
+    Math.max(1, activeTab === "payouts" ? requestedPage : 1),
     totalPayoutPages
   );
   const paginatedPayouts = allPayoutsData.payouts.slice(
-    (currentPayoutPage - 1) * pageSize,
-    currentPayoutPage * pageSize
+    (currentPayoutPage - 1) * payoutPageSize,
+    currentPayoutPage * payoutPageSize
   );
+
+  const serverSearch = new URLSearchParams(
+    Object.entries({ tab: activeTab, q, page: pageParam, pageSize: pageSizeParam }).filter(
+      (e): e is [string, string] => !!e[1]
+    )
+  ).toString();
 
   return (
     <div>
       <PageHeader
         icon={WalletCards}
         color="#39568f"
-        title="Client Payouts & Ledger"
+        title="Ledger"
       />
 
       {/* Aggregate Overview Cards */}
@@ -120,150 +128,152 @@ export default async function ClientPayoutsPage({
         />
       </div>
 
-      {/* Sub-tab Navigation */}
-      <ClientPayoutsSubTabs
-        activeTab={activeTab}
+      <ClientPayoutsTabs
+        serverActiveTab={activeTab}
+        serverSearch={serverSearch}
         clientsCount={clients.length}
         payoutsCount={totalPayoutsInDb}
-        searchQuery={q}
-      />
-
-      {/* Search Header Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-5">
-        <ClientSearchInput
-          key={activeTab}
-          defaultValue={q ?? ""}
-          placeholder={
-            activeTab === "payouts"
-              ? "Search payouts by client, section (dev / marketing), project, method, or note..."
-              : "Search clients by name, company, email or phone..."
-          }
-        />
-        <span className="text-xs text-text-muted self-end sm:self-center font-mono">
-          {activeTab === "payouts"
-            ? `Showing ${paginatedPayouts.length} of ${allPayoutsData.totalCount} payouts (Page ${currentPayoutPage}/${totalPayoutPages})`
-            : `Showing ${paginatedClients.length} of ${clients.length} clients (Page ${currentClientPage}/${totalClientPages})`}
-        </span>
-      </div>
-
-      {/* Conditional Sub-tab Content */}
-      {activeTab === "payouts" ? (
-        <AllPayoutsTable
-          payouts={paginatedPayouts}
-          totalCount={totalPayoutsCount}
-          totalAmount={allPayoutsData.totalAmount}
-          devTotal={allPayoutsData.devTotal}
-          marketingTotal={allPayoutsData.marketingTotal}
-          searchQuery={q}
-          currentPage={currentPayoutPage}
-          totalPages={totalPayoutPages}
-          pageSize={pageSize}
-        />
-      ) : (
-        /* Client Payout Directory Table */
-        <Card className="border border-border rounded-card ring-0 py-0 overflow-hidden bg-surface">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-bg text-2xs uppercase tracking-label text-text-muted border-b border-border">
-                <tr>
-                  <th className="py-3 px-4 font-semibold">Client / Company</th>
-                  <th className="py-3 px-4 font-semibold text-center">Deals</th>
-                  <th className="py-3 px-4 font-semibold text-right">Inflow (Recv.)</th>
-                  <th className="py-3 px-4 font-semibold text-right text-dev">Dev Payouts</th>
-                  <th className="py-3 px-4 font-semibold text-right text-marketing">Marketing Payouts</th>
-                  <th className="py-3 px-4 font-semibold text-right">Total Payouts</th>
-                  <th className="py-3 px-4 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {paginatedClients.map((client) => (
-                  <tr
-                    key={client.id}
-                    className="hover:bg-bg/40 transition-colors group"
-                  >
-                    <td className="py-3.5 px-4">
-                      <div className="flex flex-col">
-                        <Link
-                          href={`/admin/client-payouts/${client.id}`}
-                          className="font-medium text-text group-hover:text-dev transition-colors"
-                        >
-                          {client.name}
-                        </Link>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          {client.company && (
-                            <Badge
-                              variant="secondary"
-                              className="text-[10px] py-0 px-1.5 rounded-sm uppercase tracking-wider bg-border/40 text-text-faint"
-                            >
-                              {client.company}
-                            </Badge>
-                          )}
-                          {client.email && (
-                            <span className="text-2xs text-text-faint">{client.email}</span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-center font-mono text-xs">
-                      <span className="inline-block px-2 py-0.5 rounded-full bg-border/30 text-text">
-                        {client.dealCount}
-                      </span>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-right font-mono text-sm font-medium text-text">
-                      {formatPaisa(client.totalInflow)}
-                    </td>
-
-                    <td className="py-3.5 px-4 text-right font-mono text-sm text-dev font-medium">
-                      {formatPaisa(client.devPayouts)}
-                    </td>
-
-                    <td className="py-3.5 px-4 text-right font-mono text-sm text-marketing font-medium">
-                      {formatPaisa(client.marketingPayouts)}
-                    </td>
-
-                    <td className="py-3.5 px-4 text-right font-mono text-sm font-medium text-text">
-                      {formatPaisa(client.totalPayouts)}
-                    </td>
-
-                    <td className="py-3.5 px-4 text-center">
-                      <Link
-                        href={`/admin/client-payouts/${client.id}`}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-text border border-border px-3 py-1.5 rounded-btn hover:border-text-faint hover:bg-bg transition-colors"
+        clientsPanel={
+          <>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-5">
+              <ClientSearchInput
+                defaultValue={activeTab === "clients" ? (q ?? "") : ""}
+                placeholder="Search clients by name, company, email or phone..."
+              />
+              <span className="text-xs text-text-muted self-end sm:self-center font-mono">
+                {`Showing ${paginatedClients.length} of ${clients.length} clients (Page ${currentClientPage}/${totalClientPages})`}
+              </span>
+            </div>
+            {/* Client ledger directory */}
+            <Card className="border border-border rounded-card ring-0 py-0 overflow-hidden bg-surface">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-bg text-2xs uppercase tracking-label text-text-muted border-b border-border">
+                    <tr>
+                      <th className="py-3 px-4 font-semibold">Client / Company</th>
+                      <th className="py-3 px-4 font-semibold text-center">Deals</th>
+                      <th className="py-3 px-4 font-semibold text-right">Inflow (Recv.)</th>
+                      <th className="py-3 px-4 font-semibold text-right text-dev">Dev Payouts</th>
+                      <th className="py-3 px-4 font-semibold text-right text-marketing">Marketing Payouts</th>
+                      <th className="py-3 px-4 font-semibold text-right">Total Payouts</th>
+                      <th className="py-3 px-4 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {paginatedClients.map((client) => (
+                      <tr
+                        key={client.id}
+                        className="hover:bg-bg/40 transition-colors group"
                       >
-                        <span>Ledger & Payouts</span>
-                        <ArrowRight size={13} className="text-text-muted" />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                        <td className="py-3.5 px-4">
+                          <div className="flex flex-col">
+                            <Link
+                              href={`/admin/client-payouts/${client.id}`}
+                              className="font-medium text-text group-hover:text-dev transition-colors"
+                            >
+                              {client.name}
+                            </Link>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              {client.company && (
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px] py-0 px-1.5 rounded-sm uppercase tracking-wider bg-border/40 text-text-faint"
+                                >
+                                  {client.company}
+                                </Badge>
+                              )}
+                              {client.email && (
+                                <span className="text-2xs text-text-faint">{client.email}</span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
 
-                {paginatedClients.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-text-muted">
-                      <WalletCards size={36} className="mx-auto text-text-faint mb-3 opacity-60" />
-                      <p className="font-medium text-text">No clients found</p>
-                      <p className="text-xs text-text-faint mt-1">
-                        {q ? `No clients matching "${q}"` : "No clients created yet."}
-                      </p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                        <td className="py-3.5 px-4 text-center font-mono text-xs">
+                          <span className="inline-block px-2 py-0.5 rounded-full bg-border/30 text-text">
+                            {client.dealCount}
+                          </span>
+                        </td>
 
-          {/* Client Table Pagination */}
-          <PaginationControls
-            currentPage={currentClientPage}
-            totalPages={totalClientPages}
-            totalItems={totalClientsCount}
-            pageSize={pageSize}
-            itemLabel="clients"
-          />
-        </Card>
-      )}
+                        <td className="py-3.5 px-4 text-right font-mono text-sm font-medium text-text">
+                          {formatPaisa(client.totalInflow)}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-right font-mono text-sm text-dev font-medium">
+                          {formatPaisa(client.devPayouts)}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-right font-mono text-sm text-marketing font-medium">
+                          {formatPaisa(client.marketingPayouts)}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-right font-mono text-sm font-medium text-text">
+                          {formatPaisa(client.totalPayouts)}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-center">
+                          <Link
+                            href={`/admin/client-payouts/${client.id}`}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-text border border-border px-3 py-1.5 rounded-btn hover:border-text-faint hover:bg-bg transition-colors"
+                          >
+                            <span>Open Ledger</span>
+                            <ArrowRight size={13} className="text-text-muted" />
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {paginatedClients.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-text-muted">
+                          <WalletCards size={36} className="mx-auto text-text-faint mb-3 opacity-60" />
+                          <p className="font-medium text-text">No clients found</p>
+                          <p className="text-xs text-text-faint mt-1">
+                            {q ? `No clients matching "${q}"` : "No clients created yet."}
+                          </p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Client Table Pagination */}
+              <PaginationControls
+                currentPage={currentClientPage}
+                totalPages={totalClientPages}
+                totalItems={totalClientsCount}
+                pageSize={clientPageSize}
+                itemLabel="clients"
+              />
+            </Card>
+          </>
+        }
+        payoutsPanel={
+          <>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-5">
+              <ClientSearchInput
+                defaultValue={activeTab === "payouts" ? (q ?? "") : ""}
+                placeholder="Search payouts by client, section (dev / marketing), project, method, or note..."
+              />
+              <span className="text-xs text-text-muted self-end sm:self-center font-mono">
+                {`Showing ${paginatedPayouts.length} of ${allPayoutsData.totalCount} payouts (Page ${currentPayoutPage}/${totalPayoutPages})`}
+              </span>
+            </div>
+            <AllPayoutsTable
+              payouts={paginatedPayouts}
+              totalCount={totalPayoutsCount}
+              totalAmount={allPayoutsData.totalAmount}
+              devTotal={allPayoutsData.devTotal}
+              marketingTotal={allPayoutsData.marketingTotal}
+              searchQuery={activeTab === "payouts" ? q : undefined}
+              currentPage={currentPayoutPage}
+              totalPages={totalPayoutPages}
+              pageSize={payoutPageSize}
+            />
+          </>
+        }
+      />
     </div>
   );
 }

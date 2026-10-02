@@ -43,7 +43,7 @@ export default async function ClientPayoutWorkspacePage({
           className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text mb-3 transition-colors group"
         >
           <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-          <span>Back to Client Payouts Directory</span>
+          <span>Back to Ledger</span>
         </Link>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
